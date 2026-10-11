@@ -708,6 +708,13 @@ filled in `analyse_clues` for every clue stable to Bob. It ranks §4's pooled ru
 replay 2026350 T52). It is the stable play hierarchy's third key
 (`others_product`) without a called card to leave out.
 
+### fill-in stall
+The stall forced-endgame Rule 7 gives (DECISION_MAKING.md step 0, v23.35.0). Bob must
+stall next, so the clue goes to him and gives him nothing to throw: a play call on a
+card he needs, a trash reveal, or a clue with no subject. Among those, the smallest
+good-card product; on a tie a play call first, then the default tiebreak.
+`reactor0::choose_fill_in_stall`. Self-play 9000170 T58; replay 1973413 T69.
+
 ### touched-card rank classification
 How reactor0 decides whether a rank clue is a direct play clue (§1c priority
 1): over the identities the **cards this clue actually touched** can hold —

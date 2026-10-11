@@ -413,6 +413,16 @@ std::optional<PerformAction> choose_urgent_endgame_reactive(
 std::optional<PerformAction> choose_endgame_clue(
     const Game& game, const std::vector<ClueCandidate>& cands);
 
+// Forced-endgame Rule 7's stall (the user's ruling; human_vs_bot_diagnostics/
+// 9000170_23_33.md T58). Bob must stall next, so: a stable clue to Bob that gives
+// him nothing to throw -- a play call on a card he needs, a trash reveal, or a clue
+// with no subject; no discard call, lock or reactive -- and among those the one that
+// best FILLS IN his good cards, by the smallest good-card product (`bob_good_product`,
+// §2r's). On a tie a play call goes first (replay 1973413 T69), then the default
+// tiebreak. nullopt when there is none; `choose_endgame_clue` answers then.
+std::optional<PerformAction> choose_fill_in_stall(
+    const Game& game, const std::vector<ClueCandidate>& cands);
+
 std::optional<PerformAction> choose_clue(const Game& game,
                                          const std::vector<ClueCandidate>& cands);
 

@@ -25,6 +25,7 @@
 #include "hanabi/conventions/reactor0/interpret_clue.h"
 #include "hanabi/conventions/tiiah/interpret_clue.h"
 #include "hanabi/conventions/tiiah/dupes.h"
+#include "hanabi/conventions/tiiah/idle_stall.h"
 #include "hanabi/conventions/tiiah/interpret_reactive.h"
 #include "hanabi/conventions/tiiah/superposition.h"
 #include "hanabi/conventions/reactor0/interpret_reaction.h"
@@ -1150,7 +1151,10 @@ PerformAction Game::take_action() const {
   if (auto d = hanabi::reactor0::positional_double_discard_signal(*this)) return *d;
   if (auto d = hanabi::reactor0::positional_discard_signal(*this)) return *d;
   if (auto g = hanabi::reactor0::positional_gamble(*this)) return *g;
-  return hanabi::reactor0::positional_guard(*this, take_action_ladder());
+  // Throw It in a Hole: no stall that plays nothing while Bob holds a critical card
+  // and no play (replay 2027469 T57) -- over the endgame search too.
+  return hanabi::tiiah::no_idle_stall(
+      *this, hanabi::reactor0::positional_guard(*this, take_action_ladder()));
 }
 
 PerformAction Game::take_action_ladder() const {
@@ -1464,8 +1468,13 @@ PerformAction Game::take_action_ladder() const {
     // giving one anyway. The solver builds its clues from `all_valid_clues`,
     // which never consulted the convention, so without this the unvetted pick
     // comes straight back -- and that is the path replay 1973575 T62 took.
+    //
+    // `fill_in` is forced-endgame Rule 7's stall (the user's ruling, self-play 9000170
+    // T58): Bob must stall next, so the clue is the one that best fills in his good
+    // cards and calls nothing (`choose_fill_in_stall`), the stall list only when there
+    // is none.
     auto prefer_stall_clue =
-        [&](PerformAction chosen) -> std::optional<PerformAction> {
+        [&](PerformAction chosen, bool fill_in = false) -> std::optional<PerformAction> {
       if (!uses_reactor0_decisions(convention)) return chosen;
       if (!hanabi::is_clue(chosen)) return chosen;
       auto all_clues = enumerate_clue_candidates();
@@ -1474,7 +1483,9 @@ PerformAction Game::take_action_ladder() const {
       if (all_clues.empty()) return chosen;
       auto cands = hanabi::reactor0::analyse_clues(*this, all_clues,
                                           candidate_annotator(convention));
-      auto better = hanabi::reactor0::choose_endgame_clue(*this, cands);
+      std::optional<PerformAction> better;
+      if (fill_in) better = hanabi::reactor0::choose_fill_in_stall(*this, cands);
+      if (!better) better = hanabi::reactor0::choose_endgame_clue(*this, cands);
       if (!better) {
         // Every candidate was dropped as undecodable or vetoed as predicting a
         // strike. Burning a card beats handing a partner a promise we know to
@@ -1563,8 +1574,10 @@ PerformAction Game::take_action_ladder() const {
     // `src/endgame/forced_endgame.cpp` for the rule list. Cheap enough
     // (O(n × hand × suits)) to check before the solver kicks in.
     if (auto forced = hanabi::endgame::forced_endgame_action(*this); forced) {
+      const bool fill_in =
+          hanabi::endgame::stall_for_two_turns_one_card(*this, state.current_player_index);
       if (auto a = prefer_known_discard(
-              prefer_stall_clue(prefer_certain_play(*forced)))) {
+              prefer_stall_clue(prefer_certain_play(*forced), fill_in))) {
         return *a;
       }
       // The forced rule wanted a clue and none is legal -- fall through to the
@@ -2173,7 +2186,7 @@ std::vector<PerformAction> Game::find_all_discards(int player_index) const {
   // a first strike is not by itself fatal — had nothing better to compare it
   // against. bug_report_5_0_0.txt, replay 1957953 T30.
   // `common ∩ per-player` is the tight set both views agree on, the same
-  // idiom `own_known_identity` uses (src/endgame/forced_endgame.cpp:32-38):
+  // idiom `own_known_identity` uses (src/endgame/forced_endgame.cpp:33-39):
   // common alone can retain identities the holder has privately ruled out,
   // and the per-player view alone can be the wider of the two in fixtures
   // that seed common without syncing it.

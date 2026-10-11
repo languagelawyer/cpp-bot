@@ -56,6 +56,7 @@ add_library(hanabi_core STATIC
   src/conventions/reactor0/state_eval.cpp
   src/conventions/tiiah/buckets.cpp
   src/conventions/tiiah/dupes.cpp
+  src/conventions/tiiah/idle_stall.cpp
   src/conventions/tiiah/interpret_clue.cpp
   src/conventions/tiiah/interpret_reactive.cpp
   src/conventions/tiiah/settings.cpp
@@ -150,6 +151,7 @@ add_executable(hanabi_tests
   tests/test_endgame/test_forced_endgame.cpp
   tests/test_endgame/test_two_criticals_dead_partner.cpp
   tests/test_endgame/test_partner_needs_two_turns.cpp
+  tests/test_endgame/test_stall_for_two_turns_one_card.cpp
   tests/test_endgame/test_helper.cpp
   tests/test_endgame/test_certain_play.cpp
   tests/test_endgame/test_required_play.cpp
@@ -459,6 +461,9 @@ add_executable(hanabi_decision_tests
   tests/test_tiiah/test_decision_making/test_selfplay_9000174_reverse_reactive_frame_counts_own_call.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000096_self_colour_bluff_null_one.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000159_play_the_critical_chop.cpp
+  tests/test_tiiah/test_decision_making/test_replay_2027469_no_idle_stall_bob_holds_a_critical.cpp
+  tests/test_tiiah/test_decision_making/test_selfplay_9000115_chop_save_is_no_idle_stall.cpp
+  tests/test_tiiah/test_decision_making/test_selfplay_9000170_fill_in_stall_one_card_left.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000080_reactive_never_misnames_a_card.cpp
   tests/test_tiiah/test_decision_making/test_replay_2014538_stable_play_over_lock_at_one_clue.cpp
   tests/test_tiiah/test_decision_making/test_replay_2014561_stable_play_hierarchy_prefers_purple.cpp

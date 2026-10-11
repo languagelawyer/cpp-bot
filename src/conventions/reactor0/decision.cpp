@@ -137,7 +137,7 @@ ClueReading read_stable(const Game& game, const Game& hypo,
 
   // A newly stamped CTP/CTD in the target's hand is the designation. Only
   // ADDITIONS count: enforce_call_invariants runs straight after interpretation
-  // (decide.cpp:68) and erases older calls, so a raw before/after diff would
+  // (decide.cpp:69) and erases older calls, so a raw before/after diff would
   // also report cards this clue un-designated.
   for (int o : hypo.state.hands[target]) {
     const CardStatus before = game.meta[o].status;
@@ -217,7 +217,7 @@ ClueReading read_clue(const Game& game, const Game& hypo,
   if (!move || !std::holds_alternative<ClueInterp>(*move)) return r;
   const ClueInterp interp = std::get<ClueInterp>(*move);
   // A MISTAKE has no shape. Drop it before anything reads a stamp: the post-elim
-  // demotion (decide.cpp:251-253) leaves real-looking CTP stamps on a hypo whose
+  // demotion (decide.cpp:252-254) leaves real-looking CTP stamps on a hypo whose
   // interp is MISTAKE, so classifying stamps first would call it a play clue.
   if (interp == ClueInterp::MISTAKE) return r;
 
@@ -3075,6 +3075,42 @@ std::optional<PerformAction> choose_endgame_clue(
                                             : "rank"},
                                {"value", pick->action.clue.value},
                                {"candidates", cands.size()}});
+  return pick->perform;
+}
+
+std::optional<PerformAction> choose_fill_in_stall(
+    const Game& game, const std::vector<ClueCandidate>& cands) {
+  // A stable play calls a card Bob needs: it plays in the final round, and the call is
+  // what lets him read the position (replay 1973413 T69: Blue, the blind pitch-slot-4,
+  // on his y5). A trash reveal names its card as the subject but stamps no call. A
+  // discard call, a lock or a reactive is an instruction he would act on, and out.
+  Pool pool = select(cands, [&game](const ClueCandidate& c) {
+    if (!is_stable_to_bob(game, c)) return false;
+    if (c.reading.reacter_side.order >= 0 || c.reading.receiver_side.order >= 0) return false;
+    return c.reading.shape == ClueShape::STABLE_PLAY ||
+           c.reading.shape == ClueShape::TRASH_REVEAL ||
+           (c.reading.shape == ClueShape::OTHER && c.reading.stable_subject < 0);
+  });
+  if (pool.empty()) return std::nullopt;
+  double best = pool.front()->bob_good_product;
+  for (const ClueCandidate* c : pool) best = std::min(best, c->bob_good_product);
+  Pool tied, calls;
+  for (const ClueCandidate* c : pool) {
+    if (c->bob_good_product != best) continue;
+    tied.push_back(c);
+    if (c->reading.shape == ClueShape::STABLE_PLAY) calls.push_back(c);
+  }
+  // Tied on the product: a call on his card before information alone.
+  const ClueCandidate* pick = settle(game, calls.empty() ? std::move(tied) : std::move(calls), {});
+  if (!pick) return std::nullopt;
+  hanabi::logging::log_branch("reactor0.choose_fill_in_stall",
+                              {{"target", pick->action.target},
+                               {"kind", pick->action.clue.kind == ClueKind::COLOUR
+                                            ? "colour"
+                                            : "rank"},
+                               {"value", pick->action.clue.value},
+                               {"good_product", best},
+                               {"candidates", pool.size()}});
   return pick->perform;
 }
 

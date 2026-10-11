@@ -39,10 +39,16 @@
 //   * 5. The partner needs two turns — `cards_left == 1`, a clue token, and
 //     the NEXT seat holding two cards CP sees are critical and playable: stall
 //     with a clue so it gets two turns. Replay 1974119 T53.
+//   * 7. The seat after next needs two turns, one card left (reactor0 and Throw It
+//     in a Hole) — three players, `cards_left == 1`, two clue tokens, and Rule 6's
+//     seat-by-seat count: drawing now gives Cathy one turn, while CP's stall and
+//     Bob's give her two, Bob's own play between them. CP stalls, with the clue
+//     that best fills in Bob's good cards (`reactor0::choose_fill_in_stall`).
+//     Self-play 9000170 T58.
 //   * 1. 5-lockout — clue to delay deck-empty when the 5-holder would
 //     otherwise be locked out of their post-4 final turn.
 //
-// Rules 0c and 1-3 are `cards_left == 1` only; 0 and 0b are `cards_left == 0`
+// Rules 0c, 1-3, 5 and 7 are `cards_left == 1` only; 0 and 0b are `cards_left == 0`
 // only; Rules 4 and 6 are `cards_left == 2` only and are therefore the only rules
 // that fire at that deck size. 0c is asked ABOVE 1-3 because it is a play that must
 // happen now and those rules can answer with a stall clue.
@@ -67,6 +73,11 @@ std::optional<PerformAction> forced_endgame_action(const Game& game);
 // seat acting, and by every seat watching a discard by a reacter that owes a
 // reaction: a discard this test explains is that stall, not the reaction.
 bool stall_for_the_seat_after_next(const Game& game, int cp);
+
+// Rule 7's test (reactor0 and Throw It in a Hole): at three players, one card left and
+// two clue tokens, must `cp` stall so that the seat after next gets two turns? The
+// engine asks it again to pick the fill-in stall (`decide.cpp`).
+bool stall_for_two_turns_one_card(const Game& game, int cp);
 
 // Rule 0b on its own: the required play when nothing in hand is certain, or
 // nullopt. `narrow` is Rule 0c's stronger candidate test.

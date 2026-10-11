@@ -94,9 +94,9 @@ each and makes the full suite take ~7 minutes instead of ~40 seconds.
 ```bash
 cmake --build build -j --target hanabi_reactor0_tests   # build what you need
 build/hanabi_reactor0_tests.exe   # reactor0 only         361 tests,  7 s
-build/hanabi_tests.exe            # convention-neutral    405 tests,  1.4 s
+build/hanabi_tests.exe            # convention-neutral    410 tests,  1.4 s
 build/hanabi_reactor_tests.exe    # reactor + replays     125 tests,  7 s
-build/hanabi_decision_tests.exe   # decision quality      280 tests, 22 s
+build/hanabi_decision_tests.exe   # decision quality      283 tests, 22 s
 build/hanabi_tiiah_tests.exe      # Throw It in a Hole    285 tests,  1.2 s
 ```
 

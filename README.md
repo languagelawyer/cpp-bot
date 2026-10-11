@@ -94,7 +94,7 @@ the double discard), colour clues exactly one.
 Two orientation facts first:
 
 - **Slot 1 is the leftmost, newest card** — draws prepend to the hand
-  (`src/basics/game.cpp:386`).
+  (`src/basics/game.cpp:387`).
 - **Alice / Bob / Cathy** are positional: Alice is the player to move, Bob is
   next, Cathy after that.
 
@@ -127,7 +127,7 @@ So one clue can produce two plays, and the information is carried as much by
 *which slot the reacter chooses to act on* as by the clue itself.
 
 The bot decides between the two families per clue
-(`src/basics/decide.cpp:33-263`), and can rewind and re-read a clue as
+(`src/basics/decide.cpp:35-265`), and can rewind and re-read a clue as
 reactive if the next player's response contradicts the stable reading.
 
 Cards are kept alive by the two stable readings rather than by a dedicated save

@@ -381,7 +381,7 @@ Two things outrank the phases below, and one thing sits between them:
     Alice's known play and the endgame search, from `take_action_ladder` just before
     the endgame fork (v23.14.0; tiiah/CONVENTION.md §2o). And where priority 3.3
     would reveal only trash at one token, a stable play clue comes first (§2p).
-    `Game::take_action` (`decide.cpp:1137-1154`) asks it before
+    `Game::take_action` (`decide.cpp:1138-1158`) asks it before
     anything else but the stack invariant check (v23.34.0, which decides nothing;
     tiiah/CONVENTION.md §1.3), and runs everything below as `take_action_ladder`. It applies
     in the final round: the deck is empty, Bob (the next seat) still acts, Alice
@@ -408,7 +408,7 @@ Two things outrank the phases below, and one thing sits between them:
       guess), else its selection over every playable identity -- the leftmost
       clued card that could be one, else the leftmost -- on the Play button only,
       since a chuck would read as positional (`positional_gamble`, `:180-203`;
-      `endgame::gamble_on`, `forced_endgame.cpp:684-757`).
+      `endgame::gamble_on`, `forced_endgame.cpp:709-782`).
     - Otherwise the ladder decides, and while somebody reads our discard one it
       chooses that is not a signal is replaced (`positional_guard`, `:205-240`):
       by a stall clue (to a seat other than the reader where there is one), else
@@ -439,8 +439,8 @@ Two things outrank the phases below, and one thing sits between them:
     knew, instead of her own required play).
 
 0.  Endgame.  The forced-endgame rules and the exact solver run first
-    (`decide.cpp:1373`, the `rem_score() <= num_suits + 1` fork).  The SOLVER
-    additionally needs `pace() <= num_players` (`:1544`); the forced rules do
+    (`decide.cpp:1377`, the `rem_score() <= num_suits + 1` fork).  The SOLVER
+    additionally needs `pace() <= num_players` (`:1607`); the forced rules do
     not.  They are unchanged by this spec, with one guard on top: a CERTAIN
     play outranks a speculative one — see below.  The endgame decides
     WHETHER to clue; when its answer IS a clue, the endgame stall list below
@@ -574,7 +574,7 @@ Two things outrank the phases below, and one thing sits between them:
 num_suits + 1` counts the points still missing, not how close the deck is to
 empty, so on a 6-suit variant it opens around the halfway mark and stays open;
 303 turns in the log corpus sat inside it with 8–16 cards left. The second gate
-is `pace() <= num_players` (`decide.cpp:1594`), which scales with the seat count
+is `pace() <= num_players` (`decide.cpp:1607`), which scales with the seat count
 because pace already does — at 3 seats it is exactly `pace() <= 3`. The
 forced-endgame rules sit ABOVE it and keep running on the points condition
 alone; a closed gate falls through to the phases below.
@@ -603,7 +603,7 @@ every required identity is a Null or Dark Null card, and laying it makes the max
 score reachable (`score() + 1 + best_reachable_plays(...) >= max_score()`), the
 guess goes on the **rightmost UNCLUED** candidate instead; only when there is
 none does the leftmost-clued order above apply (`required_play_action`,
-`forced_endgame.cpp:659-681`; `gamble_on`, `:610-620`). It keys on the suit
+`forced_endgame.cpp:684-706`; `gamble_on`, `:751-761`). It keys on the suit
 names, so a Null-Ones or Null-Fives variant, whose suits are ordinary, is not
 affected. Rule 0c below never takes it: its candidates are all clued. Replay
 [2026495](https://hanab.live/shared-replay/2026495#61) T61 (TIIAH & Dark Null):
@@ -659,11 +659,35 @@ older than it looks: replay 1974119 T53 was read as an inversion of it, but the
 forced layer had simply declined, no rule covering "one card left and the NEXT
 seat holds two criticals it needs two turns to cash". That gap is **Rule 5**
 (v11.0.0, `forced_endgame.cpp`), which forces a stall there. Under Throw It in a
-Hole, **Rule 6** (v23.27.0, `forced_endgame.cpp:361-470`) covers the shape one
+Hole, **Rule 6** (v23.27.0, `forced_endgame.cpp:362-471`) covers the shape one
 card earlier: with two cards left and no token, the seat after next needs two turns,
 so CP discards to win back the token Bob stalls with, even over its own urgent call
-(self-play 9000096 T59; reactor/CONVENTION.md §2.9). The precedence
-itself never moved — and the rule **stands
+(self-play 9000096 T59; reactor/CONVENTION.md §2.9).
+
+**Rule 7** (v23.35.0, the user's ruling, reactor0 and Throw It in a Hole;
+`stall_for_two_turns_one_card`, `forced_endgame.cpp:938-951`, the action `:584-606`)
+is Rule 6's schedule with **one card left and two tokens**.
+- **When:** drawing now gives the seat after next one turn, and two stalls, CP's and
+  Bob's, give her two, with Bob's own play between them.
+- **What:** CP stalls.
+- **Which clue:** the **fill-in stall** (`reactor0::choose_fill_in_stall`,
+  `decision.cpp:3081-3115`, chosen in `prefer_stall_clue`, `decide.cpp:1472-1487`
+  and `:1577-1580`).
+  - The pool is the stable clues to Bob that give him nothing to throw: a play call
+    on a card he needs, a trash reveal, or a clue with no subject.
+  - They are ranked by the smallest good-card product (`bob_good_product`, §4's
+    pooled rung). On a tie a play call goes first, then the default tiebreak.
+  - The stall list below answers when the pool is empty.
+- **Motivating games:**
+  - Self-play 9000170 T58 (`human_vs_bot_diagnostics/9000170_23_33.md`): Black on 2,
+    Cathy holding the k3 and the k5, Bob the k4; Black to Bob names the k4.
+  - Replay 1973413 T69 (`MiscReplay1973413.TheBlindClueNamesTheY5`) also meets the
+    rule. There every candidate's product is 1, and the play call breaks the tie for
+    Blue, the blind pitch-slot-4 on Bob's y5.
+- Under Throw It in a Hole a stall Rule 7 or any other forced rule requires is no idle
+  stall (tiiah/CONVENTION.md §2x, §2y).
+
+The precedence itself never moved — and the rule **stands
 down whenever we hold a card that certainly scores**, because a guaranteed point
 is worth more than the signal and sequencing it is what the search is for
 (replay 1957936 T41: an urgent CTD of plain trash beside a pinned Orange 2 whose
@@ -938,7 +962,7 @@ is judged from Alice's own inference, not common knowledge.
     4. the default tiebreak.
 
    `rung_high_score_lead_in` (`reactor0/decision.cpp:1814-1834`) is logged as
-   `1b.high_score_lead_in` in `choose_clue` (`:3085-3086`). Outside the variant
+   `1b.high_score_lead_in` in `choose_clue` (`:3143-3144`). Outside the variant
    `lead_in_cards` is 0, so the rung is inert. Labelled **1b** for the reason 2b is.
    Self-play Dark Null 9000007 T48: 3 to sim-bob reveals his b3 and his r3, the r3
    leading into his own r4 and r5, so it ranks over a Blue revealing the b3 alone.
@@ -1008,7 +1032,7 @@ is judged from Alice's own inference, not common knowledge.
    is the default tiebreak, so nothing changes there. Replay 2019562 T31: a 4
    re-touching will-bot67's o5 calls exactly the b4, as Blue does, and Blue also
    names his b5. Logged as `2c.unlock_bob`, in both `choose_clue` and
-   Precedence step 1 (`:2857`, `:3090`).
+   Precedence step 1 (`:2878-2879`, `:3147-3148`).
 
    It sits ahead of §3, whose chop rescue presumes Bob is not locked, so the two
    never compete for the same Bob. Like H5 it does not apply while Alice is
@@ -1020,7 +1044,7 @@ is judged from Alice's own inference, not common knowledge.
    only, v23.32.0, the user's ruling and placement; H7 above,
    [tiiah/CONVENTION.md §2v](../tiiah/CONVENTION.md)). Take the best such clue by the
    default tiebreak (`rung_save_cathy_chop`, `reactor0/decision.cpp:2242-2251`, given
-   at `:3091-3092`).
+   at `:3149-3150`).
    - It sits after 2c and ahead of §3. A loaded Bob's own chop is not at risk this
      round, while Cathy, with no safe action, throws hers next.
    - With Bob loaded, a clue to Cathy is stable (role inversion), so the reactive
@@ -1358,6 +1382,19 @@ is judged from Alice's own inference, not common knowledge.
        has product 1, and is given now.
        `tests/test_tiiah/test_decision_making/test_replay_2026350_forced_clue_prefers_the_informative_five.cpp`,
        `tests/test_reactor0/test_decision_making/test_forced_clue_good_card_product.cpp`.
+
+       **Throw It in a Hole: no idle stall** (v23.35.0, the user's ruling; tiiah
+       CONVENTION.md §2x). A forced clue that gets no card played and saves nothing
+       is not given while Bob has no playable card and holds a critical one (the
+       last usable copy). Alice plays or discards instead.
+       - **Kept:** a stall a forced endgame requires, a clue that newly touches
+         Bob's critical card, and one that moves a good chop or gives Bob a safe
+         discard (self-play 9000115 T22).
+       - **Exempt:** a locked Alice keeps the clue rather than throw blind.
+       - It is a guard on the chosen action (`tiiah::no_idle_stall`, wrapping
+         `Game::take_action`), so the endgame search's clue goes through it too.
+       - Replay 2027469 T57: the trash-revealing 1 to yagami spent the clue he
+         needed for will-bot69's r5.
     6. Give a lock clue to Bob.
     7. Below 2 strikes, give a stable clue — play or discard — whose subject is a
        card Bob can afford to lose: trash, a same-hand-dupe, or a card Alice can
@@ -1738,7 +1775,7 @@ list by priority:
    the lowest rank. Replay [2025193](https://hanab.live/shared-replay/2025193#49)
    T49: will-bot69 played its known b5 here ahead of its called p2. Endgame rule 0
    holds the same line with the deck empty: in TIIAH a certain 5 is set aside while
-   another certain play exists (`forced_endgame.cpp:789-810`).
+   another certain play exists (`forced_endgame.cpp:814-835`).
 8. Alice pitches the leftmost card of the lowest stack rank (1 = reversed 5,
    2 = reversed 4, etc.)
 9. Alice chucks a known inverted suit in the chuck list.
@@ -1848,6 +1885,7 @@ lives in `src/conventions/reactor0/decision.cpp`:
 | priority 2's admissibility, and the endgame stall list's rung 4 | `discard_is_affordable` |
 | priority 2's tiebreaks, shared with the endgame stall list's rung 4 | `reactive_discard_chain` |
 | the endgame stall list | `choose_endgame_clue`; rung 4 is `e_rung_reactive_discard` (either direction) |
+| forced-endgame Rule 7's fill-in stall | `choose_fill_in_stall`, asked by `prefer_stall_clue` when `endgame::stall_for_two_turns_one_card` holds |
 | the §3.2 / §3.4 double discard | `pool_double_discard` |
 | §3.2's Cathy-chop gate | `chop_is_expendable` |
 | the four phase-2 call structures | `calls_of` (`calls.h`) |
@@ -1935,8 +1973,8 @@ button the receiver was promised.
 | stable-colour target, without simulating | `leftmost_could_be_playable` | `interpret_clue.cpp:211-231` |
 | candidate clue enumeration | `State::all_valid_clues` | `src/basics/state.cpp:350-395` |
 | colour-only subset | `State::all_colour_clues` | `src/basics/state.cpp:339-348` |
-| chop | `Game::chop` | `src/basics/decide.cpp:790-822` |
-| safe discard button on inverted suits | `discard_button_is_safe` | `src/basics/decide.cpp:1058-1078` |
+| chop | `Game::chop` | `src/basics/decide.cpp:791-823` |
+| safe discard button on inverted suits | `discard_button_is_safe` | `src/basics/decide.cpp:1059-1079` |
 | Bob's safe action (H1a) | `thinks_trash` / `Player::order_trash` | `src/basics/player_game.cpp:116-133` |
 
 ## Not yet implemented

@@ -19,7 +19,7 @@ The shared engine reads a named playable thrown away as "you hold the other copy
 the card **was already played** — by us, since our stacks can only be short by
 what we threw in the hole — and it collapses our superpositions instead
 (`presume_discard_was_played`, CONVENTION.md §1e rule 7). `useful_dc` excludes a
-playable card in a hole variant (`src/basics/decide.cpp:580-589`). Replay 2011319.
+playable card in a hole variant (`src/basics/decide.cpp:581-590`). Replay 2011319.
 
 ### believed stacks
 `State::play_stacks` under TIIAH. We resolve each hidden action against the card
@@ -324,7 +324,7 @@ next that only a stall gives time for. The token lets Bob stall with a clue, and
 Cathy gets a second turn. When Alice owes a reaction it is **not** the reaction:
 every seat asks the same test of the discarder, and the reaction stays owed, as after
 a clue (v23.27.0, the user's ruling; self-play Dark Null 9000096 T59).
-`endgame::stall_for_the_seat_after_next`, `src/endgame/forced_endgame.cpp:896-907`.
+`endgame::stall_for_the_seat_after_next`, `src/endgame/forced_endgame.cpp:925-936`.
 CONVENTION.md §2t, §1d.
 
 ### displaced reaction
@@ -657,6 +657,27 @@ Bob's chop without calling it to discard is an **occupied save**
 Alice holding a call of her own still gives it (v18.13.0,
 `cathy_chop_is_safe_to_lose` in `reactor0/decision.cpp`). CONVENTION.md §2e, human
 diagnostic 2014076 T18.
+
+### idle stall
+A clue that gets no card played and saves nothing. Alice gives none while Bob has no
+playable card and holds a critical card; she plays or discards instead. Critical here
+means the last usable copy: every undiscarded copy of the identity is in his hand, so
+both copies of an unplayable 4 count.
+- **Not idle stalls:** a stall a forced endgame requires, and a save. A save newly
+  touches one of Bob's critical cards, or moves his chop or gives him a safe discard
+  while that chop is a good card. So referential discards and trash reveals that save
+  a good chop are saves.
+- **Exempt:** a locked Alice keeps her clue rather than throw a card blind.
+- The guard is on the chosen action, so it overrides the endgame search too
+  (`no_idle_stall`, `tiiah/idle_stall.cpp`).
+- CONVENTION.md §2x; replay 2027469 T57, self-play 9000115 T22 and 9000170 T58
+  (v23.35.0).
+
+### fill-in stall
+The stall forced-endgame Rule 7 gives (CONVENTION.md §2y; reactor0 GLOSSARY): a stable
+clue to Bob that gives him nothing to throw, ranked by the smallest product of his
+good cards' candidate counts (`reactor0::choose_fill_in_stall`). Self-play 9000170 T58
+(v23.35.0).
 
 ### lockable chop / far chop
 A chop is **lockable** when it is critical, playable or one away from playable on

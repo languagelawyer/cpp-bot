@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "hanabi/basics/clue.h"
+#include "hanabi/basics/convention.h"
 #include "hanabi/basics/game.h"
 #include "hanabi/basics/identity.h"
 #include "hanabi/basics/identity_set.h"
@@ -580,6 +581,30 @@ std::optional<PerformAction> any_legal_clue(const Game& game) {
   return std::nullopt;
 }
 
+// Rule 7 — "the seat after next needs two turns, one card left" (reactor0 and Throw It
+// in a Hole; the user's ruling, human_vs_bot_diagnostics/9000170_23_33.md T58).
+//
+// Precondition: three players, `cards_left == 1`, two clue tokens. Rule 6's seat-by-seat
+// count of the plays the max score needs, and its two schedules one card earlier:
+//
+//   Alice acts   -> she draws the last card, and the final round is Bob, Cathy, Alice:
+//                   Cathy gets ONE turn.
+//   Alice stalls -> Bob stalls too, Cathy draws the last card, and the final round is
+//                   Alice, Bob, Cathy: Cathy gets TWO, with Bob's turn between them.
+//
+// The rule fires when the first schedule cannot lay every needed card and the second
+// can. CP stalls; which clue is the engine's (`prefer_stall_clue` in decide.cpp asks
+// `reactor0::choose_fill_in_stall`). 9000170 T58: Black on 2, sim-cathy holding the k3
+// and the k5 and sim-bob the k4 -- Cathy, Bob, Cathy in that order.
+std::optional<PerformAction> stall_for_two_turns_one_card_action(const Game& game) {
+  const State& s = game.state;
+  if (!stall_for_two_turns_one_card(game, s.current_player_index)) return std::nullopt;
+  hanabi::logging::log_branch("endgame.stall_for_two_turns_one_card", {});
+  auto clues = game.find_all_clues(s.current_player_index);
+  if (!clues.empty()) return clues.front();
+  return any_legal_clue(game);
+}
+
 }  // namespace
 
 // Rule 0b -- the play that has to happen, when nothing in hand is certain.
@@ -879,6 +904,10 @@ std::optional<PerformAction> forced_endgame_action(const Game& game) {
   // stall, so the order between them cannot change the action.
   if (auto a = partner_needs_two_turns_action(game)) return a;
 
+  // Rule 7: the seat after next needs two turns, one card left. Below Rule 5, which
+  // answers the same way for the next seat.
+  if (auto a = stall_for_two_turns_one_card_action(game)) return a;
+
   bool any_lockout = false;
   for (int suit = 0; suit < static_cast<int>(s.variant->suits.size()); ++suit) {
     if (five_lockout_fires(game, suit)) {
@@ -903,6 +932,21 @@ bool stall_for_the_seat_after_next(const Game& game, int cp) {
   const int cathy = (cp + 2) % 3;
   const bool everyone_acts = schedule_lays_all(s, *needs, {cp, bob, cathy, cp, bob}, 0);
   if (everyone_acts) return false;
+  return schedule_lays_all(s, *needs, {cathy, cp, bob, cathy}, 0);
+}
+
+bool stall_for_two_turns_one_card(const Game& game, int cp) {
+  const State& s = game.state;
+  if (!uses_reactor0_decisions(game.convention)) return false;
+  if (s.num_players != 3 || s.cards_left != 1 || s.clue_tokens < 2) return false;
+  if (!s.can_clue() || cp != s.our_player_index) return false;
+  const auto needs = needed_by_seat(game, cp);
+  if (!needs) return false;
+  const int bob = (cp + 1) % 3;
+  const int cathy = (cp + 2) % 3;
+  // Acting now: our turn (a play draws too), then the final round.
+  if (schedule_lays_all(s, *needs, {cp, bob, cathy, cp}, 0)) return false;
+  // Our stall and Bob's, then Cathy draws the last card.
   return schedule_lays_all(s, *needs, {cathy, cp, bob, cathy}, 0);
 }
 
