@@ -17,6 +17,7 @@
 #include "hanabi/basics/identity_set.h"
 #include "hanabi/basics/player.h"
 #include "hanabi/basics/sarcastic.h"
+#include "hanabi/basics/stack_invariant.h"
 #include "hanabi/conventions/reactor/interpret_clue.h"
 #include "hanabi/conventions/reactor/interpret_reaction.h"
 #include "hanabi/conventions/reactor/state_eval.h"
@@ -232,7 +233,7 @@ void Game::interpret_clue(const Game& prev, const ClueAction& action) {
   using namespace hanabi::reactor;
   // Giving a clue counts as MISSING your own pending reaction -- under reactor.
   // `check_missed` scans the giver's own hand for an urgent card and clears the
-  // stamp, reverting `inferred` to `old_inferred` (basics/game.cpp:97).
+  // stamp, reverting `inferred` to `old_inferred` (basics/game.cpp:98).
   //
   // Reactor0 is exempt. There a reacter is ALLOWED to defer: its Precedence puts
   // a VERY HIGH clue above the urgent return, so a clue is exactly what a
@@ -1134,6 +1135,10 @@ bool contains_v(const std::vector<int>& v, int x) {
 }  // namespace
 
 PerformAction Game::take_action() const {
+  // The stack invariant (v23.34.0): a decision is never taken on a view that
+  // stands past a card none of whose copies can have been played. Here as well as
+  // in `handle_action` because a snapshot replay builds the game in catch-up.
+  check_stack_invariant(*this, "take_action");
   // THE POSITIONAL DISCARD (v23.2.0, the user's ruling). As Bob we play the card
   // a positional discard named, ahead of everything; as Alice we give one, or take
   // the gamble that is ours when Bob holds no play, and otherwise never let a

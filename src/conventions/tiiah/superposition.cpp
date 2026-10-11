@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "hanabi/basics/game.h"
+#include "hanabi/basics/stack_invariant.h"
 #include "hanabi/basics/state.h"
 #include "hanabi/conventions/tiiah/interpret_reactive.h"
 #include "hanabi/logging/decide_trace.h"
@@ -342,6 +343,14 @@ bool stack_rests_on_this_copy(const State& s, int order, Identity id) {
 
 void settle(Game& game, int order, Identity id, bool shared) {
   const State& s = game.state;
+  // No hole card is settled as an identity every copy of which we can see elsewhere
+  // (v23.34.0, the stack invariant): our own eyes refute it, and booked it would put
+  // a view past that card. Like a set refuted to nothing, it is left as it is.
+  if (unplayed_in_sight(s, id)) {
+    hanabi::logging::log_branch("tiiah.settle_refused_unplayed_in_sight",
+                                {{"order", order}, {"card", s.log_id(id)}, {"shared", shared}});
+    return;
+  }
   const bool ours = s.holder_of(order) == s.our_player_index;
   // Before the set is cleared below: anything whose reading leaned on this card
   // being something else has just lost that world (§1e).
@@ -391,6 +400,11 @@ void settle(Game& game, int order, Identity id, bool shared) {
 // shared view and every row learn it, our own belief already has it.
 void settle_shared_only(Game& game, int order, Identity id) {
   const State& s = game.state;
+  if (unplayed_in_sight(s, id)) {  // as in `settle` (v23.34.0)
+    hanabi::logging::log_branch("tiiah.settle_refused_unplayed_in_sight",
+                                {{"order", order}, {"card", s.log_id(id)}, {"shared", true}});
+    return;
+  }
   refute_worlds(game, order, IdentitySet::single(id));
   if (playable_on(s, s.common_play_stacks, id)) {
     game.with_state([id](State& st) { st = st.with_common_play(id); });
@@ -624,6 +638,15 @@ bool narrow_superposition(Game& game, int order, const IdentitySet& allowed) {
   if (order < 0 || order >= static_cast<int>(game.meta.size())) return false;
   if (!game.meta[order].superposed()) return false;
   const IdentitySet kept = game.meta[order].superposition.intersect(allowed);
+  // Never ONLY to identities every copy of which we can see elsewhere (v23.34.0, the
+  // stack invariant): settled, one would put a view past that card. Replay 2014402
+  // T23: a reaction read black's o9 (the y2) as the y3, both y3s in our sight. Such
+  // a set is left alone, but one that keeps another identity narrows as before: to
+  // strike the in-sight ones from it would settle a shared card by our sight alone.
+  if (kept.filter([&game](Identity i) { return !unplayed_in_sight(game.state, i); })
+          .is_empty()) {
+    return false;
+  }
   // The same guard the collapsing rules carry: a set refuted down to nothing says
   // something else is wrong, and is not a licence to assert a contradiction.
   if (kept.is_empty()) return false;
@@ -1532,6 +1555,18 @@ IdentitySet own_called_fallback(const Game& game, int order, const IdentitySet& 
   return out.non_empty() ? out : possible;
 }
 
+OwnHolePlayReading own_hole_play_reading(const Game& game, int order) {
+  const IdentitySet team = game.common.thoughts[order].possibilities();
+  const Thought& mine = game.players[game.state.our_player_index].thoughts[order];
+  if (team.length() == 1 && !mine.possible.contains(team.head())) {
+    // Every copy of what the team names is in our view (v18.9.0, 2013726 T27): the
+    // card is what our own reading names, and nothing we can rule out.
+    const IdentitySet ours = mine.possibilities();
+    return {only_one(ours), ours};
+  }
+  return {only_one(team), team};
+}
+
 IdentitySet team_called_fallback(const Game& game, int order, const IdentitySet& possible) {
   const State& s = game.state;
   if (!s.variant->throw_it_in_a_hole) return IdentitySet::empty();
@@ -1688,10 +1723,23 @@ void note_hidden_action(Game& game, const Action& raw) {
   // lets all three track this set on the player's behalf. Read BEFORE the
   // action is dispatched: for a partner's card `on_play` is about to pin the
   // thought to the identity we could see and they could not.
-  const IdentitySet candidates = game.common.thoughts[order].possibilities();
+  IdentitySet candidates = game.common.thoughts[order].possibilities();
   const int player = play->player_index_v;
   const auto seen = game.state.deck[order].id();
   std::optional<Identity> known = only_one(candidates);
+  // OUR OWN card, though, is never named as an identity we can see is gone
+  // (v23.34.0, the user's rule): the question our own stacks already ask
+  // (`own_hole_play_reading`, as `hidden_own_play_id`). Replay 2027454 T41: the
+  // team read will-bot67's o39 as the g3 by the bucket, and will-bot67, seeing both
+  // g3s, read `{y2,p3}`. Named by the team, the card put a g3 on its common view and
+  // both pair rows with the critical g3 in will-bot69's hand, and at T46 it could
+  // not read yagami's reactive. The seats that watched the card name it by sight
+  // below; ours keeps it a superposition over its own reading.
+  if (player == game.state.our_player_index) {
+    const OwnHolePlayReading own = own_hole_play_reading(game, order);
+    candidates = own.candidates;
+    known = own.name;
+  }
   // A STALE common naming (v19.1.0). Our common copy of a partner's call can be
   // read on a frame we could not compute: an outside seat reads a call between two
   // partners on the shared floor (§1.3), and the plays that floor lacks may be our
@@ -1712,6 +1760,19 @@ void note_hidden_action(Game& game, const Action& raw) {
       player != game.state.our_player_index && game.state.is_playable(*seen)) {
     known = seen;
   }
+  // ...and never as an identity every copy of which we can see elsewhere (v23.34.0,
+  // the user's rule that no view passes a card we can see is unplayed). Had the card
+  // we see played on our stacks, the branch above named it by sight; so it STRUCK by
+  // our belief, and nothing is booked for it in the shared view, not even as a
+  // superposition. Only then: a team name we cannot disprove stays, since the seat
+  // that cannot see the card books it too, and a shared view one seat alone corrects
+  // splits the seats (self-play Black seed 43 T54-T58: refusing every struck card's
+  // name read Bob's next clue as a reactive at two seats, and as a stable clue at
+  // the third).
+  const bool struck_by_sight = known && seen && *seen != *known &&
+                               player != game.state.our_player_index &&
+                               unplayed_in_sight(game.state, *known);
+  if (struck_by_sight) known.reset();
 
   // The ROWS (§1.3, v16.23.0). A row takes a play when both seats of the pair can
   // name it, and it takes it as a floor: the pair watched the card land (never
@@ -1832,7 +1893,7 @@ void note_hidden_action(Game& game, const Action& raw) {
     known_play_lands_in_common(game, *known, order);
     return;
   }
-  if (candidates.is_empty()) return;
+  if (struck_by_sight || candidates.is_empty()) return;
   // The player could not name it, so it is a superposition -- for them, and for
   // the shared view. The watchers' rows took it above.
   const int turn = game.state.turn_count;

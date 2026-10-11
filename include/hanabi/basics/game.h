@@ -401,8 +401,11 @@ class Game {
   void on_play(const PlayAction& action);
   void on_draw(const DrawAction& action);
 
-  // Top-level dispatcher. Mutates self.
+  // Top-level dispatcher. Mutates self. Outside catch-up (live play, self-play,
+  // a test driving the game) it then checks the stack invariant
+  // (`stack_invariant.h`).
   void handle_action(const Action& action);
+  void handle_action_impl(const Action& action);
 
   // Reset state to `base`, then replay action_list with `new_action`
   // inserted at the start of turn `turn`. Used by the convention layer to

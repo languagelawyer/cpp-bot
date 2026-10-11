@@ -37,6 +37,23 @@ void deal_starting_hands(Game& g, const std::vector<Identity>& cards) {
   }
 }
 
+// A legal starting deal, round-robin by order: Bob's five cards are all 1s and none
+// is red, and Alice's newest card (order 12) is `alices_newest`. Until v23.34.0 these
+// tests dealt fifteen r1s, a deck that cannot exist, and the stack invariant
+// (`hanabi/basics/stack_invariant.h`) refuses a play onto it.
+std::vector<Identity> legal_deal(Identity alices_newest) {
+  const Identity y1{1, 1}, y2{1, 2}, y3{1, 3}, y4{1, 4};
+  const Identity g1{2, 1}, g2{2, 2}, g3{2, 3};
+  const Identity b1{3, 1}, b2{3, 2}, b3{3, 3};
+  const Identity p1{4, 1}, p2{4, 2}, p3{4, 3};
+  //       Alice          Bob  Cathy
+  return {g3,           y1, y2,
+          b3,           g1, g2,
+          p3,           b1, b2,
+          y4,           p1, p2,
+          alices_newest, y1, y3};
+}
+
 }  // namespace
 
 TEST(Game, CreateInitialShape) {
@@ -81,7 +98,7 @@ TEST(Game, FullDealAdvancesTurnTo1) {
 
 TEST(Game, PlayActionAdvancesPlayStack) {
   Game g = make_three_player_game();
-  std::vector<Identity> deck(15, Identity(0, 1));
+  std::vector<Identity> deck = legal_deal(Identity(0, 1));
   deal_starting_hands(g, deck);
   // Alice plays her newest card (slot 0 = order 12, a r1)
   const int order = g.state.hands[0].front();
@@ -93,7 +110,7 @@ TEST(Game, PlayActionAdvancesPlayStack) {
 
 TEST(Game, DiscardActionRegainsClueAndUpdatesPile) {
   Game g = make_three_player_game();
-  std::vector<Identity> deck(15, Identity(0, 1));
+  std::vector<Identity> deck = legal_deal(Identity(0, 1));
   deal_starting_hands(g, deck);
   g.state.clue_tokens = 5;
   const int order = g.state.hands[0].front();
@@ -105,7 +122,7 @@ TEST(Game, DiscardActionRegainsClueAndUpdatesPile) {
 
 TEST(Game, FailedDiscardIncrementsStrikes) {
   Game g = make_three_player_game();
-  std::vector<Identity> deck(15, Identity(0, 1));
+  std::vector<Identity> deck = legal_deal(Identity(0, 2));
   deal_starting_hands(g, deck);
   const int order = g.state.hands[0].front();
   g.handle_action(DiscardAction{0, order, 0, 2, /*failed=*/true});
@@ -246,10 +263,10 @@ TEST(Game, GameOverEndsInProgress) {
 
 TEST(Game, IsTouchedAfterClue) {
   Game g = make_three_player_game();
-  std::vector<Identity> deck(15, Identity(0, 1));
+  std::vector<Identity> deck = legal_deal(Identity(0, 1));
   deal_starting_hands(g, deck);
   const int bob = 1;
-  std::vector<int> touched = g.state.hands[bob];  // every card is r1, so all touched
+  std::vector<int> touched = g.state.hands[bob];  // all five are 1s, so all touched
   g.handle_action(ClueAction{0, bob, touched, BaseClue(ClueKind::RANK, 1)});
   for (int o : touched) EXPECT_TRUE(g.is_touched(o));
   // Alice's cards are not clued.

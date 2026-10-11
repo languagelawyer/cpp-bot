@@ -65,14 +65,14 @@ bool is_lock_target(const ReactorWC& wc, int target_slot);
 // Is `hypo`'s waiting connection the one THIS candidate clue just installed?
 //
 // `Game::interpret_clue` clears `waiting` only when the new clue's giver was the
-// pending reacter (`decide.cpp:53-55`), so a stale connection from an earlier
+// pending reacter (`decide.cpp:54-56`), so a stale connection from an earlier
 // turn otherwise survives into the hypo of an unrelated candidate and every
 // clue-time predictor reads it as its own.
 //
 // The turn comparison is `>=`, NOT `==`. `Game::simulate` routes to
 // `simulate_action` (`game.h:198`), which emits a leading `TurnAction` before
-// `handle_action` runs the interpretation (`game.cpp:656-667`), and that stamps
-// `turn_count = num + 1` (`game.cpp:687`). So the WC is created one turn ahead
+// `handle_action` runs the interpretation (`game.cpp:659-670`), and that stamps
+// `turn_count = num + 1` (`game.cpp:690`). So the WC is created one turn ahead
 // of the caller's `game.state.turn_count`. An exact compare therefore never
 // matches and silently disables whatever it guards — which is precisely how VH1
 // shipped dead in v7.0.0 step 2. A genuinely stale connection is strictly older,

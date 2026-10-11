@@ -8,6 +8,7 @@
 #include "hanabi/basics/identity_set.h"
 #include "hanabi/basics/player.h"
 #include "hanabi/basics/player_elim.h"
+#include "hanabi/basics/stack_invariant.h"
 #include "hanabi/conventions/tiiah/dupes.h"
 #include "hanabi/conventions/tiiah/interpret_reactive.h"
 #include "hanabi/conventions/tiiah/superposition.h"
@@ -562,24 +563,26 @@ std::optional<Identity> hidden_own_play_id(const Game& game, const Action& act) 
   if (order < 0 || order >= static_cast<int>(game.common.thoughts.size())) {
     return std::nullopt;
   }
-  const IdentitySet live = game.common.thoughts[order].possibilities();
-  if (live.length() != 1) return std::nullopt;
   // Unless we can see that the team's name for it is wrong (v18.9.0): every copy
   // of that identity is in view. Then the card is what OUR view names -- core
   // rule 2's fallback, `tiiah::own_called_fallback` -- or unnamed, but never the
-  // identity we can rule out. Human diagnostic 2013726 T27.
-  const Thought& mine = game.players[game.state.our_player_index].thoughts[order];
-  if (!mine.possible.contains(live.head())) {
-    const IdentitySet ours = mine.possibilities();
-    if (ours.length() == 1) return ours.head();
-    return std::nullopt;
-  }
-  return live.head();
+  // identity we can rule out. Human diagnostic 2013726 T27. The shared view and
+  // the pair rows ask the same question (`tiiah::note_hidden_action`, v23.34.0).
+  return hanabi::tiiah::own_hole_play_reading(game, order).name;
 }
 
 }  // namespace
 
 void Game::handle_action(const Action& action) {
+  handle_action_impl(action);
+  // The stack invariant (v23.34.0, the user's rule): no view of ours stands at or
+  // past a card none of whose copies can have been played. Not during catch-up,
+  // which is also what `simulate_action` and `rewind` run under: a hypothetical
+  // line can hold anything, and a rewind replays actions already checked.
+  if (!catchup) check_stack_invariant(*this, "handle_action");
+}
+
+void Game::handle_action_impl(const Action& action) {
   if (static_cast<int>(state.action_list.size()) < state.turn_count) {
     throw std::runtime_error("turn_count exceeds action_list length");
   }

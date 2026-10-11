@@ -34,6 +34,7 @@ add_library(hanabi_core STATIC
   src/basics/player_elim.cpp
   src/basics/player_game.cpp
   src/basics/sarcastic.cpp
+  src/basics/stack_invariant.cpp
   src/basics/state.cpp
   src/basics/variant.cpp
   src/conventions/reactor/interpret_clue.cpp
@@ -124,6 +125,7 @@ include(GoogleTest)
 add_executable(hanabi_tests
   tests/test_smoke.cpp
   tests/test_harness.cpp
+  tests/strict_invariants.cpp
   tests/test_harness_smoke.cpp
   tests/test_basics/test_identity_set.cpp
   tests/test_basics/test_clue.cpp
@@ -136,6 +138,7 @@ add_executable(hanabi_tests
   tests/test_basics/test_variants.cpp
   tests/test_basics/test_variant_reversed.cpp
   tests/test_basics/test_state.cpp
+  tests/test_basics/test_stack_invariant.cpp
   tests/test_basics/test_game.cpp
   tests/test_basics/test_chop.cpp
   tests/test_basics/test_snapshot_convention.cpp
@@ -181,6 +184,7 @@ gtest_discover_tests(hanabi_tests PROPERTIES LABELS "core")
 # can, which is why the full suite is still the pre-commit gate.
 add_executable(hanabi_reactor_tests
   tests/test_harness.cpp
+  tests/strict_invariants.cpp
   tests/test_reactor/test_reactive_table.cpp
   tests/test_reactor/test_ctd_revives.cpp
   tests/test_reactor/test_reactive_inferred_narrow.cpp
@@ -254,6 +258,7 @@ gtest_discover_tests(hanabi_reactor_tests PROPERTIES LABELS "reactor")
 # `ctest -L '^(core|reactor0)$'` — this target plus the neutral one.
 add_executable(hanabi_reactor0_tests
   tests/test_harness.cpp
+  tests/strict_invariants.cpp
   tests/test_reactor0/test_allplays_parity.cpp
   tests/test_reactor0/test_dead_chuck_call.cpp
   tests/test_reactor0/test_candidate_rollback.cpp
@@ -383,6 +388,7 @@ gtest_discover_tests(hanabi_reactor0_tests PROPERTIES LABELS "reactor0")
 # test change) before being silenced.
 add_executable(hanabi_decision_tests
   tests/test_harness.cpp
+  tests/strict_invariants.cpp
   tests/test_reactor/test_decision_making/test_low_clue_count.cpp
   tests/test_reactor/test_decision_making/test_high_value_clue.cpp
   tests/test_reactor/test_decision_making/test_replay_1916933_clue_forces_discard_of_queued_playable.cpp
@@ -426,6 +432,7 @@ add_executable(hanabi_decision_tests
   tests/test_tiiah/test_decision_making/test_selfplay_9000096_stall_discard_for_the_seat_after_next.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000016_no_clue_for_a_second_called_copy.cpp
   tests/test_tiiah/test_decision_making/test_replay_2026882_save_cathys_critical_chop.cpp
+  tests/test_tiiah/test_decision_making/test_replay_2027454_reacts_to_the_g3.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000081_both_name_their_card_late.cpp
   tests/test_tiiah/test_decision_making/test_replay_2024676_finesse_duping_a_call_is_not_very_high.cpp
   tests/test_tiiah/test_decision_making/test_replay_2025193_no_five_ahead_of_a_lower_playable.cpp
@@ -511,6 +518,7 @@ gtest_discover_tests(hanabi_decision_tests PROPERTIES LABELS "decision_making")
 # convention.
 add_executable(hanabi_tiiah_tests
   tests/test_harness.cpp
+  tests/strict_invariants.cpp
   tests/test_tiiah/test_variant_flag.cpp
   tests/test_tiiah/test_convention_predicates.cpp
   tests/test_tiiah/test_buckets.cpp
@@ -624,6 +632,7 @@ add_executable(hanabi_tiiah_tests
   tests/test_tiiah/test_replay_2026727_target_walked_after_receivers_known_plays.cpp
   tests/test_tiiah/test_replay_2026832_play_call_replaces_discard_call.cpp
   tests/test_tiiah/test_replay_2026856_known_play_over_low_clue.cpp
+  tests/test_tiiah/test_replay_2027454_own_play_not_named_by_seen_card.cpp
   tests/test_tiiah/test_self_colour_bluff.cpp
   tests/test_tiiah/test_known_bucket_violation.cpp
   tests/test_tiiah/test_replay_2019598_named_card_refutes_finesse_world.cpp

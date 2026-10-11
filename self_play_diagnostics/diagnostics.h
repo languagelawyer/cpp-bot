@@ -9,7 +9,10 @@
 //      or the receiver card the reaction finally calls;
 //   4  a stack view sits below the highest rank everyone in the view has seen
 //      played (`4-above`, a view above the truth, is informational);
-//   5  a strike, with what each seat knew (informational, triaged by hand).
+//   5  a strike, with what each seat knew (informational, triaged by hand);
+//   6  a stack view at or past a card none of whose copies can have been played,
+//      by that seat's own sight (`stacks_past_unplayed_in_sight`, v23.34.0).
+//      Reported, but not critical: it is counted on its own line.
 #pragma once
 
 #include <map>
@@ -58,6 +61,7 @@ class Diagnostics {
   void check_reaction(const Sim& sim, const Outcome& o, int turn);
   void check_stacks(const Sim& sim, int turn);
   void check_strike(const Sim& sim, const Outcome& o, int turn);
+  void check_invariant(const Sim& sim, int turn);
 
   void add(Issue i);
   std::string id_str(Identity id) const;

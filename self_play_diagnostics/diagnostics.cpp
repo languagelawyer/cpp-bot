@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "hanabi/basics/interp.h"
+#include "hanabi/basics/stack_invariant.h"
 #include "hanabi/conventions/variants/hole.h"
 
 namespace hanabi::selfplay {
@@ -249,8 +250,26 @@ void Diagnostics::after_action(const Sim& sim, const Outcome& o) {
     check_reaction(sim, o, turn);
   }
   check_stacks(sim, turn);
+  check_invariant(sim, turn);
   note_onsets(sim, o, turn);
   cur_ = nullptr;
+}
+
+// Class 6: a view that stands at or past a card none of whose copies can have
+// been played, by the seat's own sight -- the check `Game::handle_action` logs at
+// every seat (v23.34.0, the user's rule; replay 2027454 T41). Once per seat, view
+// and card.
+void Diagnostics::check_invariant(const Sim& sim, int turn) {
+  const TrueState& t = sim.truth();
+  for (int s = 0; s < np_; ++s) {
+    for (const StackViolation& v : stacks_past_unplayed_in_sight(sim.seat(s))) {
+      add(Issue{"6", v.view, turn, s, v.id.to_ord(),
+                json{{"view_seat", v.view_seat},
+                     {"card", id_str(v.id)},
+                     {"view", v.stack},
+                     {"truth", t.stacks[v.id.suit_index]}}});
+    }
+  }
 }
 
 void Diagnostics::note_onsets(const Sim& sim, const Outcome& o, int turn) {

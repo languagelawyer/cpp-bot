@@ -53,6 +53,7 @@ elsewhere.
 | [9000159 (v23.30, scream experiment)](9000159_23_30.md) | Throw It in a Hole & Black (6 Suits), tiiah (self-play) | — | T36 (a play clue on a critical, playable chop over a lock), T38 (a locked Bob throws the card he sees again) | fixed (v23.33.0) |
 | [2026856](2026856.md) | Throw It in a Hole & Dark Prism (6 Suits), tiiah | yagami_black | T47 (a play known by touch comes before a LOW clue) | fixed (v23.31.0) |
 | [2026882](2026882.md) | Throw It in a Hole & Dark Prism (6 Suits), tiiah | yagami_black | T25 (save Cathy's critical chop while Bob is loaded) | fixed (v23.32.0) |
+| [2027454](2027454.md) | Throw It in a Hole & Gray Pink (6 Suits), tiiah | yagami_black | T40 (a reactive whose bucket names a card the reacter sees twice), T41 (our blind play named by a card we see is gone), T46 (stack views past a critical card in sight) | T40 needs no change; T41 and T46 fixed (v23.34.0), with the stack invariant |
 
 ## Template
 

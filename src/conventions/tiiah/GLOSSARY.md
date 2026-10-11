@@ -19,7 +19,7 @@ The shared engine reads a named playable thrown away as "you hold the other copy
 the card **was already played** — by us, since our stacks can only be short by
 what we threw in the hole — and it collapses our superpositions instead
 (`presume_discard_was_played`, CONVENTION.md §1e rule 7). `useful_dc` excludes a
-playable card in a hole variant (`src/basics/decide.cpp:579-588`). Replay 2011319.
+playable card in a hole variant (`src/basics/decide.cpp:580-589`). Replay 2011319.
 
 ### believed stacks
 `State::play_stacks` under TIIAH. We resolve each hidden action against the card
@@ -44,6 +44,21 @@ Since v16.12.0 it is the FLOOR rather than the reading: what a clue means is rea
 against the *pairwise view* below, and the common stacks are what is left when we
 are not one of the two seats a clue is between. The one exception is the
 *global play reveal* below (historical: v18.20.0, reversed by v22.5.0).
+
+### unplayed in sight
+An identity none of whose copies can have been played, by one seat's own sight:
+every copy is in a partner's hand, or in the discard pile having been discarded on
+the wire. A hidden play booked as a strike does not count, since whether it landed
+is inference. The critical card in a partner's hand is the plain case.
+`unplayed_in_sight`, `src/basics/stack_invariant.cpp:101-106` (every one at once,
+`all_unplayed_in_sight`, `:30-70`). No hole card is named or settled as one (§1e).
+
+### stack invariant
+None of a seat's views (its *believed stacks*, each row of its *pairwise view*, its
+*common stacks*) stands at or past a card that is *unplayed in sight* (v23.34.0, the
+user's rule). Checked after every action and before every decision. A violation is
+logged as `invariant.stack_past_unplayed` and throws in the test binaries' strict
+mode. Self-play class 6. CONVENTION.md §1.3.
 
 ### global play reveal
 Historical (v18.20.0 to v22.4.0). A colour play reveal whose card is also revealed
@@ -153,7 +168,7 @@ when an assignment is not playable on the stacks the world has reached. §1e rul
 refutes a striking world whenever a strike-free one is available, and stands them
 all up again when every world has a strike in it: then the strike is not an
 assumption anybody made. `strike_free`
-(`src/conventions/tiiah/superposition.cpp:796-806`), read by
+(`src/conventions/tiiah/superposition.cpp:819-829`), read by
 `presume_own_plays_land` for our own belief and by `advance_rows_from_own_worlds`
 for a partner's row. v16.18.0.
 
@@ -176,7 +191,7 @@ resolves is kept as a `ReactionRecord`; a world in which two or more of the
 receiver's cards from that clue sit, and one of them would have out-ranked the card
 the reacter called in the target walk (a direct playable before a finesse, each
 leftmost first), is not the world we are in. `world_feasible`,
-`src/conventions/tiiah/superposition.cpp:861-961`; `open_worlds` drops such worlds
+`src/conventions/tiiah/superposition.cpp:884-984`; `open_worlds` drops such worlds
 and `prune_infeasible_worlds` settles on the rest, shared. Replay 2011397 T6.
 Since v20.21.0 the settle also counts a receiver's card the team has **named in the
 hole** (not conditional, not already clued when the reactive was given --
@@ -253,7 +268,7 @@ world agrees on are unconditional and are not recorded. Replay 2009367 T4.
 Reading our own hidden plays off a clue between two other seats. They called a
 card we can SEE, and a call says it is playable, so they hold that suit one below
 it; anything their stack has above ours can only be what we threw in the hole.
-`back_solve_own_plays`, `src/conventions/tiiah/superposition.cpp:505-560`. Rule 4
+`back_solve_own_plays`, `src/conventions/tiiah/superposition.cpp:519-574`. Rule 4
 of §1e's collapse, and the only one that tells a seat about its OWN past. What it
 learns is private: it moves our belief and no pairwise row (v17.3.0).
 

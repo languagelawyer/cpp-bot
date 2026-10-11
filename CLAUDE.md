@@ -89,16 +89,26 @@ alongside its replacement.
 
 Tests are split by convention so a scoped run is possible. **Run the test
 binaries directly** — `ctest` spawns one process per test, which costs ~1 s
-each and makes the full suite take ~7 minutes instead of ~23 seconds.
+each and makes the full suite take ~7 minutes instead of ~40 seconds.
 
 ```bash
 cmake --build build -j --target hanabi_reactor0_tests   # build what you need
 build/hanabi_reactor0_tests.exe   # reactor0 only         361 tests,  7 s
-build/hanabi_tests.exe            # convention-neutral    400 tests,  1.4 s
+build/hanabi_tests.exe            # convention-neutral    405 tests,  1.4 s
 build/hanabi_reactor_tests.exe    # reactor + replays     125 tests,  7 s
-build/hanabi_decision_tests.exe   # decision quality      277 tests,  0.7 s
-build/hanabi_tiiah_tests.exe      # Throw It in a Hole    284 tests,  0.3 s
+build/hanabi_decision_tests.exe   # decision quality      280 tests, 22 s
+build/hanabi_tiiah_tests.exe      # Throw It in a Hole    285 tests,  1.2 s
 ```
+
+Most of the decision suite's time is three late-game tests (2026455 ×2, 2024288)
+that each run the endgame solver to its 6 s deadline.
+
+**The test binaries run the stack invariant in STRICT mode** (v23.34.0, the user's
+rule; `tests/strict_invariants.cpp`, `hanabi/basics/stack_invariant.h`). A test
+fails if any seat's stack view stands at or past a card none of whose copies can
+have been played by that seat's sight. A fixture must therefore be a possible
+deal: no fifteen r1s. The live bot, self_play and replay_log only log a violation,
+as `invariant.stack_past_unplayed`.
 
 Pick the scope from the report's `Convention:` field:
 
@@ -106,7 +116,7 @@ Pick the scope from the report's `Convention:` field:
 |---|---|
 | reactor0 | `hanabi_reactor0_tests` + `hanabi_tests` (6.3 s) |
 | reactor | `hanabi_reactor_tests` + `hanabi_tests` (20 s) |
-| tiiah | `hanabi_tiiah_tests` + `hanabi_tests` (1.5 s) |
+| tiiah | `hanabi_tiiah_tests` + `hanabi_tests` (2.6 s) |
 | shared engine (`src/basics/`, eval, elim) | all five |
 
 `ctest` remains available when you want label composition or CI-style output:

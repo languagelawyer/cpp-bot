@@ -275,6 +275,23 @@ bool advance_rows_from_own_worlds(Game& game);
 // read `{n3}` by the bucket, black sees both n3s, and so knows it holds the r4.
 IdentitySet own_called_fallback(const Game& game, int order, const IdentitySet& possible);
 
+// What OUR OWN card is named as when we throw it into the hole, at every view we
+// hold (v23.34.0). The team's reading (`common`) names it when that is one
+// identity -- unless our own eyes rule that identity out (`possible` lacks it:
+// every copy is in view), and then the card is what OUR reading names, or
+// unnamed, a superposition over our own reading. Never the identity we can see is
+// gone. `name` is the identity, when there is one; `candidates` the set a
+// superposition is stamped with otherwise. `Game::handle_action`'s
+// `hidden_own_play_id` (our own stacks) and `note_hidden_action` (the shared view
+// and the pair rows) both ask it. Replay 2027454 T41: the team read will-bot67's
+// o39 as the g3 by the bucket; will-bot67 saw both g3s and read `{y2,p3}`, its
+// own stacks did not take the g3, but its common view and both pair rows did.
+struct OwnHolePlayReading {
+  std::optional<Identity> name;
+  IdentitySet candidates;
+};
+OwnHolePlayReading own_hole_play_reading(const Game& game, int order);
+
 // CORE RULE 2 FOR THE TEAM (v23.12.0): the same reading once EVERY seat can rule the
 // team's reading of a called card out -- elimination has emptied it, so every copy
 // of what it named is accounted for elsewhere. The call stands and the card is any

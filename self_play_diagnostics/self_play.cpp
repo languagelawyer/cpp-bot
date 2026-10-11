@@ -377,6 +377,19 @@ int main(int argc, char** argv) {
      << first_wrong.size() << " cards ever read wrongly ("
      << (records.empty() ? 0.0 : 100.0 * first_wrong.size() / records.size())
      << " per 100 games)\n";
+  {
+    int stack_past = 0;
+    std::set<std::uint64_t> stack_past_games;
+    for (const auto& r : records) {
+      for (const auto& is : r.issues) {
+        if (is.cls != "6") continue;
+        ++stack_past;
+        stack_past_games.insert(r.result.seed);
+      }
+    }
+    md << "- Stack views past an unplayed card in sight (class 6): " << stack_past
+       << " in " << stack_past_games.size() << " games\n";
+  }
   if (div_turns > 0) {
     md << "- Seats disagree after " << (100.0 * div_common / div_turns)
        << "% of actions on the common view, " << (100.0 * div_pair / div_turns)
