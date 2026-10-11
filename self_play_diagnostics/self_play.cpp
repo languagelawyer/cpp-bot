@@ -89,11 +89,13 @@ struct Args {
   std::string variant = "Throw It in a Hole & Black (6 Suits)";
   int players = 3;
   double endgame_timeout = 6.0;
+  bool print_decks = false;
 };
 
 void usage() {
   std::cerr << "usage: self_play [--seeds A..B] [--jobs N] [--out DIR] [--report FILE.md]\n"
-               "                 [--log-dir DIR|''] [--variant NAME] [--players N]\n";
+               "                 [--log-dir DIR|''] [--variant NAME] [--players N]\n"
+               "       self_play --print-decks [--seeds A..B] [--variant NAME]\n";
 }
 
 bool parse(int argc, char** argv, Args& a) {
@@ -126,6 +128,8 @@ bool parse(int argc, char** argv, Args& a) {
       a.players = std::stoi(next());
     } else if (k == "--endgame-timeout") {
       a.endgame_timeout = std::stod(next());
+    } else if (k == "--print-decks") {
+      a.print_decks = true;
     } else {
       return false;
     }
@@ -176,6 +180,22 @@ int main(int argc, char** argv) {
     std::cerr << e.what() << "\n";
     usage();
     return 2;
+  }
+  // THE FULL DECK of every seed, one JSON line each, and no game played: the
+  // export script (scripts/export_selfplay_games.py) writes it into each replay,
+  // since a game that ends early never draws the rest and hanab.live rejects a
+  // replay without every card. From `build_deck`, the function the games use.
+  if (args.print_decks) {
+    const hanabi::Variant& variant = hanabi::get_variant(args.variant);
+    for (auto s = args.seed_from; s <= args.seed_to; ++s) {
+      json deck = json::array();
+      for (const hanabi::Identity& id : build_deck(variant, s)) {
+        deck.push_back(json{{"suitIndex", id.suit_index}, {"rank", id.rank}});
+      }
+      std::cout << json{{"seed", s}, {"variant", args.variant}, {"deck", deck}}.dump()
+                << "\n";
+    }
+    return 0;
   }
   if (args.jobs <= 0) {
     args.jobs = std::max(1u, std::thread::hardware_concurrency() / 2);

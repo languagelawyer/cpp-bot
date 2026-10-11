@@ -176,16 +176,24 @@ JSONs:
 
 ```bash
 scripts/export_selfplay_games.py <out_dir> v23.22=<base>/games.jsonl,<base_logs> \
-    v23.24=<cand>/games.jsonl,<cand_logs> [--score 29]
+    v23.24=<cand>/games.jsonl,<cand_logs> [--score 29 | --seeds 16,40..42]
 ```
 
-It takes the games that scored `--score` with no 5 discarded and names each
+It takes the games that scored `--score` with no 5 discarded (or, with `--seeds`,
+the seeds named, whatever they scored) and names each
 `<variant>_<major>_<minor>_<game id>.json`, e.g. `darknull_23_22_9000002.json`. The
 version is in the name (from v23.25.0, the user's rule) because every build numbers
 its games `9000000 + seed`. It comes from the arm's name, so name each arm after its
 version: a candidate is usually run before its bump. A game identical in every arm
 gets one file, under the first arm's version. Keep the reviewed games' logs under
 `logs/diag/<dir>/`, out of the way of the next run, which overwrites `logs/`.
+
+Every replay carries the full deck (55 cards in a 6-suit variant; the user's rule,
+from v23.29.0). hanab.live rejects a replay that lacks one, and a game that strikes
+out never draws the rest. The script takes the deck from `self_play --print-decks
+--seeds S --variant V`, which prints each seed's deck from the dealing function
+(`build_deck`, `sim.cpp`), and checks every card the logs saw drawn against it.
+`--self-play` names the binary (default `build/self_play.exe`).
 
 ## Tests
 

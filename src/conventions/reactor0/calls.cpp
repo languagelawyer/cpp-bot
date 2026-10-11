@@ -8,6 +8,7 @@
 #include "hanabi/basics/state.h"
 #include "hanabi/conventions/reactor0/decision.h"
 #include "hanabi/conventions/reactor0/facts.h"
+#include "hanabi/conventions/variants/hole.h"
 #include "hanabi/conventions/variants/inverted.h"
 #include "hanabi/conventions/variants/reversed.h"
 #include "hanabi/logging/decide_trace.h"
@@ -220,6 +221,28 @@ bool pitch_would_strike(const Game& game, int player, int order) {
   return true;
 }
 
+// Throw It in a Hole (v23.29.0): a call on the holder's own card that is DELAYED
+// behind the holder's own queued plays -- no reading of it plays now, and one
+// plays once the plays the team is already committed to have landed
+// (`stacks_after_queued_plays`, the call itself left out). The ordinary reactive's
+// target is walked on the receiver's stacks after its already gotten plays
+// (tiiah/CONVENTION.md §1c), so its call can sit behind a play still in the hand,
+// and it waits for it. Self-play Black 9000194 T46: sim-alice's new call o35 `{y5}`
+// went ahead of her called o22 `{y4}`, yellow on 3, and struck.
+bool delayed_behind_own_plays(const Game& game, int player, int order) {
+  const State& s = game.state;
+  if (!s.variant->throw_it_in_a_hole) return false;
+  if (game.meta[order].status != CardStatus::CALLED_TO_PLAY) return false;
+  const Thought& t = game.players[player].thoughts[order];
+  const IdentitySet& set = t.inferred.non_empty() ? t.inferred : t.possible;
+  if (set.is_empty() || set.exists([&s](Identity i) { return s.is_playable(i); })) {
+    return false;
+  }
+  const State after =
+      variants::stacks_after_queued_plays(game, player, order, &s.play_stacks);
+  return set.exists([&after](Identity i) { return after.is_playable(i); });
+}
+
 }  // namespace
 
 bool call_is_actionable(const Game& game, int player, int order) {
@@ -264,11 +287,16 @@ ActionLists action_lists(const Game& game, int player) {
   // CTP stamped on an inverted card IS a deliberate pitch -- reactor0 stamps
   // CTD when it wants an inverted card played -- so the deque keeps its members
   // whatever their suit.
+  //
+  // Nor does it re-admit a call the deque dropped because it is DELAYED behind the
+  // holder's own queued plays (Throw It in a Hole, v23.29.0): its empathy can hold a
+  // playable identity that its reading has ruled out.
   for (int o : game.players[player].thinks_playables(game, player)) {
     if (variants::possible_has_inverted(
             game.state, game.players[player].thoughts[o].possible)) {
       continue;
     }
+    if (delayed_behind_own_plays(game, player, o)) continue;
     if (std::find(pitchable.begin(), pitchable.end(), o) == pitchable.end()) {
       pitchable.push_back(o);
     }

@@ -20,6 +20,7 @@
 #include "hanabi/conventions/reactor0/interpret_reactive.h"
 #include "hanabi/conventions/variants/hole.h"
 #include "hanabi/conventions/tiiah/buckets.h"
+#include "hanabi/conventions/tiiah/interpret_reactive.h"
 #include "hanabi/conventions/tiiah/superposition.h"
 #include "hanabi/conventions/reactor0/facts.h"
 #include "hanabi/conventions/variants/inverted.h"
@@ -93,7 +94,7 @@ Outcome outcome_of(const State& s, int order, CardStatus button) {
 
 // The receiver's button, given the clue kind and the button the reacter was
 // told to press. Fixed by the resolution parity table in react_play /
-// react_discard (reactor0/interpret_reaction.cpp:84, :88-91, :131, :136-139).
+// react_discard (reactor0/interpret_reaction.cpp:85, :88-91, :131, :136-139).
 // The receiver is not stamped at clue time on the phases that matter here, so
 // the reading has to come from the parity rather than from the meta.
 //
@@ -295,8 +296,18 @@ ClueReading read_clue(const Game& game, const Game& hypo,
                                   /*target_is_bob=*/action.target == wc.reacter)
               .even),
       reacter_status);
+  // Throw It in a Hole's ORDINARY arm (v23.29.0, the user's ruling): the receiver's
+  // card is judged after its own already gotten known plays as well, which is where
+  // its target was walked (tiiah `receiver_targets`). Replay 2026727 T9: the b3 behind
+  // a known b2 is the receiver's play, not a strike.
+  const State receiver_faces =
+      (s.variant->throw_it_in_a_hole && receiver != s.next_player_index(action.giver) &&
+       !wc.receiver_called.empty())
+          ? hanabi::tiiah::lay_gotten_plays(game, after_bob, wc.receiver_called,
+                                            *receive_order)
+          : after_bob;
   r.receiver_side = {*receive_order, wc.receiver, rb,
-                     outcome_of(after_bob, *receive_order, rb)};
+                     outcome_of(receiver_faces, *receive_order, rb)};
   r.shape = shape_of(r.reacter_side.outcome, r.receiver_side.outcome);
   return r;
 }
@@ -707,6 +718,54 @@ bool calls_two_copies_to_play(const Game& game, const Game& hypo) {
   // cannot be fooled into pressing the button on a copy that has just died.
   return game.common.thoughts[*recv_order].possibilities().length() != 1;
 }
+
+namespace {
+
+// THROW IT IN A HOLE: does this clue get played a copy of a card ALREADY called to
+// play (v23.29.0, the user's ruling)? The new plays are every card the clue newly
+// stamps to play, plus the reading's two sides where they play, by the giver's sight.
+// The called copies are every card called to play before the clue: a partner's by
+// sight, our own by a one-identity team reading. Unlike `calls_two_copies_to_play`,
+// which compares the clue's own two cards, this compares them with the calls already
+// standing. Self-play Black 9000016 T2: sim-bob's 3 to sim-alice had sim-cathy react
+// with her p1 while his own o8 stood called `{p1}`.
+bool gets_a_called_duplicate(const Game& game, const Game& hypo, const ClueCandidate& c) {
+  const State& s = game.state;
+  if (!s.variant->throw_it_in_a_hole) return false;
+  std::vector<std::pair<int, Identity>> called;
+  for (const auto& hand : s.hands) {
+    for (int o : hand) {
+      if (game.meta[o].status != CardStatus::CALLED_TO_PLAY) continue;
+      std::optional<Identity> id = s.deck[o].id();
+      if (!id) {
+        const IdentitySet live = game.common.thoughts[o].possibilities();
+        if (live.length() == 1) id = live.head();
+      }
+      if (id) called.emplace_back(o, *id);
+    }
+  }
+  if (called.empty()) return false;
+  std::vector<std::pair<int, Identity>> fresh;
+  for (const auto& hand : s.hands) {
+    for (int o : hand) {
+      if (game.meta[o].status == CardStatus::CALLED_TO_PLAY) continue;
+      if (hypo.meta[o].status != CardStatus::CALLED_TO_PLAY) continue;
+      if (auto id = s.deck[o].id()) fresh.emplace_back(o, *id);
+    }
+  }
+  for (const Designation* d : {&c.reading.reacter_side, &c.reading.receiver_side}) {
+    if (d->order < 0 || d->outcome != Outcome::PLAY) continue;
+    if (auto id = s.deck[d->order].id()) fresh.emplace_back(d->order, *id);
+  }
+  for (const auto& [o, id] : fresh) {
+    for (const auto& [q, qid] : called) {
+      if (q != o && qid == id) return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace
 
 // THROW IT IN A HOLE: would this clue call to play a card WE may already have
 // played (v17.2.0)?
@@ -1273,6 +1332,15 @@ std::vector<ClueCandidate> analyse_clues(
       c.lead_in_chain = lead.chain;
       c.lead_in_critical = lead.critical;
       if (lead.cards > 0 && c.tier < ClueTier::HIGH) c.tier = ClueTier::HIGH;
+    }
+    // ...but a clue that gets played a copy of a card already called to play is at
+    // most MEDIUM (Throw It in a Hole, v23.29.0, the user's ruling): below the bar an
+    // occupied seat needs, so a seat holding a call plays it instead. Applied after
+    // every lift above. Self-play Black 9000016 T2: sim-bob's 3 was HIGH (sim-alice's
+    // k1 a critical low card), sim-cathy then deferred her p1 for a VERY HIGH clue, the
+    // p1 was re-read as the p2 sim-bob's own p1 had made playable, and it struck.
+    if (c.tier > ClueTier::MEDIUM && gets_a_called_duplicate(game, hypo, c)) {
+      c.tier = ClueTier::MEDIUM;
     }
 
     // Rung 4b's third conjunct: does this clue get BOB playing immediately?

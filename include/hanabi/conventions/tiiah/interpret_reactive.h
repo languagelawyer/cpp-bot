@@ -20,6 +20,7 @@
 namespace hanabi {
 class Game;
 struct ReactorWC;
+struct State;
 }
 namespace hanabi::reactor0 {
 struct ClueCandidate;
@@ -55,6 +56,13 @@ std::vector<ReceiverTarget> receiver_targets(const Game& game, int receiver,
                                              bool receiver_acts_first = true,
                                              const std::vector<int>* base = nullptr,
                                              const Game* before = nullptr);
+
+// THE RECEIVER'S FRAME on the ordinary arm (v23.29.0, the user's ruling): `base` with
+// `gotten` -- the receiver's already gotten known plays, the cards the target walk
+// passes over as called -- laid as the team reads them (one identity each), `except`
+// excepted. Used by `reactor0::stamp_receiver_call`, where the target is known.
+State lay_gotten_plays(const Game& game, const State& base, const std::vector<int>& gotten,
+                       int except);
 
 // The receiver's target: the next playable in their hand under STACK
 // SIMULATION, where every known play in that hand is assumed already played

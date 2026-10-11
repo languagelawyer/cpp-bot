@@ -423,6 +423,7 @@ add_executable(hanabi_decision_tests
   tests/test_tiiah/test_decision_making/test_selfplay_9000007_high_score_lead_in.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000069_reacter_sees_givers_named_card.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000096_stall_discard_for_the_seat_after_next.cpp
+  tests/test_tiiah/test_decision_making/test_selfplay_9000016_no_clue_for_a_second_called_copy.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000081_both_name_their_card_late.cpp
   tests/test_tiiah/test_decision_making/test_replay_2024676_finesse_duping_a_call_is_not_very_high.cpp
   tests/test_tiiah/test_decision_making/test_replay_2025193_no_five_ahead_of_a_lower_playable.cpp
@@ -616,6 +617,7 @@ add_executable(hanabi_tiiah_tests
   tests/test_tiiah/test_colour_reveal_through_worlds.cpp
   tests/test_tiiah/test_retouch_rank_call.cpp
   tests/test_tiiah/test_replay_2026697_retouch_two_names_the_gray_two.cpp
+  tests/test_tiiah/test_replay_2026727_target_walked_after_receivers_known_plays.cpp
   tests/test_tiiah/test_self_colour_bluff.cpp
   tests/test_tiiah/test_known_bucket_violation.cpp
   tests/test_tiiah/test_replay_2019598_named_card_refutes_finesse_world.cpp

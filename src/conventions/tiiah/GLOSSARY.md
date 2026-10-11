@@ -167,7 +167,7 @@ unbooked, since which card was which is exactly what is unknown.
 The stacks a reactive's target is walked in: the **minimum**, suit by suit, across
 every world the reacter can live in, from the giver's perspective (v16.24.0). For the
 pair it is their row; for an outside seat, the shared view floored over every seat's
-worlds. `reacter_frame`, `src/conventions/tiiah/interpret_reactive.cpp:328-342`.
+worlds. `reacter_frame`, `src/conventions/tiiah/interpret_reactive.cpp:364-378`.
 CONVENTION.md §1e. It replaced "assume none of the superposed cards were played".
 
 ### feasible world
@@ -263,7 +263,7 @@ to reconstruct at reaction time (a proven finesse's connector, or the reacter's 
 on the shared frame), within the card's reading before the clue. The giver and the
 reacter know the card exactly; unless the team reading is that one card, they keep it
 privately and the shared view carries the team's set (v17.2.0).
-`reaction_team_reading`, `src/conventions/tiiah/interpret_reactive.cpp:2039-2090`.
+`reaction_team_reading`, `src/conventions/tiiah/interpret_reactive.cpp:2176-2227`.
 CONVENTION.md §1d.
 
 ### known bucket violation
@@ -299,7 +299,7 @@ b3 leads into a b4 and a b5, but not into a b5 with no b4 in sight. In the High 
 Phase, a play clue revealing an unknown playable of Bob's (of Cathy's, when Bob is
 loaded) that leads into two or more cards, or whose very next card is critical, is a
 **lead-in** and is HIGH, given at priority 1b (`high_score_lead_in`,
-`src/conventions/reactor0/decision.cpp:1076-1145`; CONVENTION.md §2s, v23.26.0;
+`src/conventions/reactor0/decision.cpp:1135-1204`; CONVENTION.md §2s, v23.26.0;
 self-play Dark Null 9000007 T48).
 
 ### stall discard (forced endgame)
@@ -325,12 +325,12 @@ A reactive pairing the RECEIVER can show was a finesse without seeing its own ca
 called card could be the card after the one the reacter played, and could not be any
 card of the bucket half in any of its worlds. The reacter's card is then named, for the
 whole team, as the connector it was (v17.1.0). `proven_finesse`,
-`src/conventions/tiiah/interpret_reactive.cpp:1496-1531`. CONVENTION.md §1d.
+`src/conventions/tiiah/interpret_reactive.cpp:1615-1650`. CONVENTION.md §1d.
 
 Since v22.0.0 it is also the **only finesse that may be given**, and it decides the
 receiver's own reading. A proven finesse reads as the card after the reacter's. Any
 other pairing reads as the bucket half alone (`keep_convention_half`,
-`interpret_reactive.cpp:1409-1459`), never the union of the two halves.
+`interpret_reactive.cpp:1528-1578`), never the union of the two halves.
 
 ### shared view
 `State::shared_view()` (`src/basics/state.cpp:279-297`): this state with the
@@ -470,7 +470,7 @@ clue (`ReactorWC::receiver_standing`, v20.3.0). A play of any other card, includ
 one the reverse clue itself newly made playable, or a discard, withdraws it
 (v18.11.0; the reviewer's rule; replay 2018428 T17). This is how a Cathy who cannot tell a fix from a
 reverse reactive learns which it was. `tiiah::confirm_reverse_reactive`,
-`src/conventions/tiiah/interpret_reactive.cpp:361-431`. CONVENTION.md §1c.
+`src/conventions/tiiah/interpret_reactive.cpp:397-467`. CONVENTION.md §1c.
 
 ### role inversion
 The clue-to-Cathy half of the *reverse-reactive position*: Bob holds a *standing
@@ -484,8 +484,32 @@ reactive's target walk passes over it, since a new reactive has to get something
 new. When every playable and finesse target in
 the receiver's hand is gotten, the walk takes the leftmost gotten one instead
 (v18.5.0; human diagnostic 2013726 T38). `receiver_targets` and `walked_as_called`,
-`src/conventions/tiiah/interpret_reactive.cpp:435-510`. CONVENTION.md §1c; replay
+`src/conventions/tiiah/interpret_reactive.cpp:471-598`. CONVENTION.md §1c; replay
 2026374 T41 for the sure play.
+
+### already gotten plays
+The receiver's gotten cards, plus every card the team names as one identity that
+those make playable, in a chain (v23.29.0). Judged before the clue, on the common
+view, so every seat gets the same set (`gotten_plays`,
+`src/conventions/tiiah/interpret_reactive.cpp:489-518`). They are what *stack
+simulation* lays on the ordinary arm. Replay 2026374 T42: a known y5 behind a sure
+y4 is already gotten. CONVENTION.md §1c.
+
+### called duplicate
+A copy of a card already called to play. A clue that gets one played is at most
+MEDIUM, so a seat holding a call plays it instead (v23.29.0, the user's ruling).
+`gets_a_called_duplicate`, `src/conventions/reactor0/decision.cpp:724-766`. Self-play
+Black 9000016 T2. CONVENTION.md §2u.
+
+### stack simulation
+Judging a reactive's receiver as if its known plays were already played. The
+receiver's target is the next playable card on those stacks. On the reverse arm the
+receiver moves first, so the reacter's frame includes them too
+(`stacks_after_queued_plays`, via `reacter_faces`). On the ordinary arm (v23.29.0,
+the user's ruling) only the receiver's frame does. Its *already gotten plays* are laid
+as the team reads them, the card being read excepted (`receiver_faces`,
+`src/conventions/tiiah/interpret_reactive.cpp:61-88`), and the reacter's card is
+judged without them. Human diagnostic 2026727 T9. CONVENTION.md §1c.
 
 ### reverse reactive
 The second of TIIAH's two dispatches. When Bob holds a *standing play* and Cathy
@@ -518,7 +542,7 @@ inverted card. Inverted playables and inverted finesses are otherwise skipped as
 reactive targets. The reacter's own card has to be **affordable to chuck** —
 inverted and playable, so the button plays it, or simply not critical — and a
 pairing that fails that is refused outright, since the reacter cannot see their
-own hand. `safe_to_chuck`, `src/conventions/tiiah/interpret_reactive.cpp:103-109`.
+own hand. `safe_to_chuck`, `src/conventions/tiiah/interpret_reactive.cpp:132-138`.
 CONVENTION.md §1d.
 
 ### delayed call
@@ -528,7 +552,11 @@ Alive but not actionable: reactor0's dead-call invariant judges it against the
 stacks after those queued plays, and leaves the call itself out of that
 simulation (`src/conventions/reactor0/call_invariants.cpp:192-231`). A call
 whose reading is a valid pitch in some strike-free world of the shared view is
-not dead either (v16.29.0). CONVENTION.md §1c.
+not dead either (v16.29.0). Since v23.29.0 the ordinary reactive's target is
+walked after the receiver's *already gotten plays*, so the receiver's own call can
+be delayed behind them too. Its holder plays those first: the call is kept off the
+pitch list until its reading plays (`delayed_behind_own_plays`,
+`src/conventions/reactor0/calls.cpp:224-244`). CONVENTION.md §1c.
 
 ### deferred read
 A clue this seat waits to read (v20.12.0). It goes to Bob, would be a reverse
@@ -675,7 +703,7 @@ one identity of its empathy plays (`named_own_card`). At the holder's own seat i
 our unnamed cards. The giver judges the reacter this way in the misname check and in
 the late bucket break (v23.25.0, the user's ruling; self-play Dark Null 9000069 T56: the
 red bucket's r5 was the giver's own named card). `seen_by_holder`,
-`src/conventions/tiiah/interpret_reactive.cpp:251-291`. CONVENTION.md §1d.
+`src/conventions/tiiah/interpret_reactive.cpp:287-327`. CONVENTION.md §1d.
 
 ### blind read
 The giver's second reading of its own stable clue, made with the receiver's hand

@@ -2,13 +2,20 @@
 """Export self-play games as hanab.live replay JSONs, for a human to review.
 
 Usage:
-  scripts/export_selfplay_games.py <out_dir> <arm>=<games.jsonl>,<log_dir> ... [--score N]
+  scripts/export_selfplay_games.py <out_dir> <arm>=<games.jsonl>,<log_dir> ...
+      [--score N | --seeds S[,S..|A..B]] [--self-play build/self_play.exe]
 
 Each arm is one self-play run: its `games.jsonl` (`self_play --out`) and the
 directory its per-seat logs went to (`self_play --log-dir`). The games exported are
 those that scored exactly `--score` (default 29, the near misses) with no 5 in the
 discard pile -- a missed play goes to the pile too -- since a game that lost a 5 is
-not a near miss worth reading.
+not a near miss worth reading. `--seeds` exports the seeds named instead, whatever
+they scored.
+
+Every replay carries the FULL deck (the user's rule, from v23.29.0): hanab.live
+rejects a replay without every card, and a game that strikes out never draws the
+rest. The deck comes from `self_play --print-decks`, the function the games were
+dealt from, and every card the logs saw drawn is checked against it.
 
 Files are named `<variant>_<major>_<minor>_<game id>.json`, e.g.
 `darknull_23_22_9000002.json` (the user's rule, from v23.25.0): self-play game ids
@@ -28,6 +35,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 
 SUITS = "rygbpu"
 SEATS = ["alice", "bob", "cathy"]
@@ -66,6 +74,36 @@ def build_game(log_dir, game_id):
         elif t == "discard":
             actions.append({"type": 1, "target": a["order"], "value": 0})
     return deck, actions
+
+
+_DECKS = {}
+
+
+def full_deck(self_play, variant, seed, drawn):
+    """The whole deck the game was dealt from, checked against the cards drawn."""
+    key = (variant, seed)
+    if key not in _DECKS:
+        out = subprocess.run([os.path.abspath(self_play), "--print-decks", "--seeds", str(seed),
+                              "--variant", variant],
+                             capture_output=True, text=True, check=True).stdout
+        _DECKS[key] = [(c["suitIndex"], c["rank"]) for c in json.loads(out)["deck"]]
+    deck = _DECKS[key]
+    for o, sr in drawn.items():
+        if o >= len(deck) or deck[o] != sr:
+            raise SystemExit(f"seed {seed}: card {o} was drawn as {sr}, but {self_play} "
+                             f"deals {deck[o] if o < len(deck) else 'nothing'} there")
+    return deck
+
+
+def parse_seeds(text):
+    seeds = set()
+    for part in text.split(","):
+        if ".." in part:
+            a, b = part.split("..", 1)
+            seeds.update(range(int(a), int(b) + 1))
+        else:
+            seeds.add(int(part))
+    return seeds
 
 
 def simulate(deck, actions, num_suits):
@@ -107,6 +145,10 @@ def main():
     ap.add_argument("out_dir")
     ap.add_argument("arms", nargs="+", help="<arm>=<games.jsonl>,<log_dir>")
     ap.add_argument("--score", type=int, default=29)
+    ap.add_argument("--seeds", type=parse_seeds, default=None,
+                    help="export these seeds whatever they scored, e.g. 16 or 1..5,9")
+    ap.add_argument("--self-play", default="build/self_play.exe",
+                    help="the self_play binary whose --print-decks gives the full deck")
     args = ap.parse_args()
 
     arms = []
@@ -121,32 +163,32 @@ def main():
         arms.append((name, rows, log_dir))
 
     os.makedirs(args.out_dir, exist_ok=True)
-    seeds = sorted({s for _, rows, _ in arms for s, g in rows.items()
-                    if g["score"] == args.score})
+    wanted = lambda g: (g["seed"] in args.seeds) if args.seeds else g["score"] == args.score
+    seeds = sorted({s for _, rows, _ in arms for s, g in rows.items() if wanted(g)})
     index = []
     for seed in seeds:
         game_id = 9000000 + seed
         kept = []  # (arm, actions, export, summary, file stem)
         for name, rows, log_dir in arms:
             g = rows.get(seed)
-            if not g or g["score"] != args.score:
+            if not g or not wanted(g):
                 continue
             init = game_init(log_dir, game_id)
             variant = init["variant"]
-            deck, actions = build_game(log_dir, game_id)
-            n = len(deck)
-            assert sorted(deck) == list(range(n)), f"seed {seed} {name}: deck has gaps"
-            num_suits = 1 + max(s for s, _ in deck.values())
+            drawn, actions = build_game(log_dir, game_id)
+            assert sorted(drawn) == list(range(len(drawn))), f"seed {seed} {name}: deck has gaps"
+            deck = full_deck(args.self_play, variant, seed, drawn)
+            num_suits = 1 + max(s for s, _ in deck)
             score, trash = simulate(deck, actions, num_suits)
             assert score == g["score"], f"seed {seed} {name}: simulated {score} != {g['score']}"
             fives = [card(s, r) for s, r in trash if r == 5]
-            if fives:
+            if fives and not args.seeds:
                 index.append(f"{seed}\t{name}\tskipped: a 5 was discarded {','.join(fives)}")
                 continue
             export = {
                 "id": game_id,
                 "players": [f"sim-{seat}" for seat in SEATS],
-                "deck": [{"suitIndex": deck[o][0], "rank": deck[o][1]} for o in range(n)],
+                "deck": [{"suitIndex": s, "rank": r} for s, r in deck],
                 "actions": actions,
                 "options": {"variant": variant},
                 "notes": [[] for _ in SEATS],

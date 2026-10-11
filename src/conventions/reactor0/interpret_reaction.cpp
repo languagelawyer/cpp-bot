@@ -5,6 +5,7 @@
 #include "hanabi/conventions/reactor0/decision.h"
 #include "hanabi/conventions/reactor0/interpret_clue.h"
 #include "hanabi/conventions/tiiah/buckets.h"
+#include "hanabi/conventions/tiiah/interpret_reactive.h"
 #include "hanabi/conventions/variants/predicates.h"
 
 #include <algorithm>
@@ -443,6 +444,16 @@ void stamp_receiver_call(const Game& prev, Game& game, const ReactorWC& wc,
       after[k] += game.state.play_stacks[k] - prev.state.play_stacks[k];
     }
     rewound_new = with_stacks(game.state, after);
+  }
+  // Throw It in a Hole, the ORDINARY arm (v23.29.0, the user's ruling;
+  // human_vs_bot_diagnostics/2026727.md T9): the target was walked after the
+  // receiver's already gotten known plays (`ReactorWC::receiver_called`), so the call
+  // reads on them too, laid as the team reads them, the target itself excepted. The
+  // reverse arm's frame has them in already.
+  if (game.state.variant->throw_it_in_a_hole && !wc.receiver_called.empty() &&
+      wc.receiver != game.state.next_player_index(wc.giver)) {
+    rewound_old = hanabi::tiiah::lay_gotten_plays(prev, rewound_old, wc.receiver_called, order);
+    rewound_new = hanabi::tiiah::lay_gotten_plays(prev, rewound_new, wc.receiver_called, order);
   }
   const State& old_s = rewound_old;
   const State& new_s = rewound_new;

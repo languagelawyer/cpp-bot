@@ -635,7 +635,7 @@ the unique remaining copy of a `find_must_plays` identity
 ## 27. `[reactor0]` The ladder's pitch list uses a weaker playability notion than the solver's
 
 Same asymmetry as §26, one layer up. `action_lists`
-(`src/conventions/reactor0/calls.cpp:249`) calls
+(`src/conventions/reactor0/calls.cpp:250`) calls
 
 ```cpp
 game.players[player].thinks_playables(game, player)
@@ -660,7 +660,7 @@ corpus run rather than being folded into a bug fix.
 v8.8.0 made `is_chuckable` require `possible` — not just `inferred` — to be all
 trash before throwing a card the team invested in. That guard does **not** cover
 `CALLED_TO_DISCARD` cards: they join the chuck list through their own arm
-(`src/conventions/reactor0/calls.cpp:289-290`) and never reach `is_chuckable`.
+(`src/conventions/reactor0/calls.cpp:340-341`) and never reach `is_chuckable`.
 
 Across the log corpus, **123 of the 154** discards whose `inferred` read as trash
 while `possible` disagreed came in through that arm, and two of them cost max
@@ -682,7 +682,7 @@ That is `target_discard`'s weaker filter, *not* `chuck_candidates`: the ruling
 was that a stable "this slot is safe to throw" does not also claim the card is
 unplayable, so the playable readings stay. So what this entry asks for is still
 open on both counts — the stamp is not `chuck_candidates`-tight, and the CTD arm
-at `src/conventions/reactor0/calls.cpp:312-313` still reaches the chuck list
+at `src/conventions/reactor0/calls.cpp:340-341` still reaches the chuck list
 without passing `is_chuckable`.
 
 ---
@@ -815,13 +815,13 @@ before Alice has at least one clue" part.
 **Settled in v16.23.0: a lock that leaves NO chop.** When every card that
 predates the lock is clued, the promise has nothing to protect, and the ruling is
 that Alice discards the first card drawn during the stall rather than pitching
-slot 1 blind (`12.discard_stall_drawn`, `calls.cpp:586-615`; replay 2011327 T32,
+slot 1 blind (`12.discard_stall_drawn`, `calls.cpp:614-643`; replay 2011327 T32,
 DECISION_MAKING.md rung 12). What follows is the case that is still open: a locked
 card that EXISTS, and a nameable trash card competing with it.
 
 What is undefined is what happens when Alice holds a card she can *name* as
 trash while the lock is on. Phase 2's chuck and pitch rungs all sit **above**
-the `12.discard_chop` floor (`calls.cpp:547`, `:635`), so any chuck candidate
+the `12.discard_chop` floor (`calls.cpp:575`, `:663`), so any chuck candidate
 pre-empts the locked chop. v10.4.0 made that far more common by removing the
 `possible`-must-agree guard from `is_chuckable`, and the two readings genuinely
 conflict:
@@ -1154,7 +1154,7 @@ bucket relation — is called from one place, `Game::interpret_play`
 (`src/basics/decide.cpp:731-752`). So it is skipped whenever the reacter's action
 reaches a seat as a **discard**, even though the reaction machinery below it gets
 the button right: `reacter_button_pressed`
-(`src/conventions/reactor0/interpret_reaction.cpp:591-601`) already knows that a
+(`src/conventions/reactor0/interpret_reaction.cpp:602-612`) already knows that a
 plain card can only reach a strike via the Play button, and stamps the receiver
 `CALLED_TO_PLAY` accordingly. Only the narrowing is missing, so the receiver keeps
 the generic "every playable the stacks allow" reading.
@@ -1181,14 +1181,14 @@ the comment at the seam (`decide.cpp:712-716`) deliberately avoided.
 ## 46. `[tiiah]` `ReactorWC::clue_play_stacks` serves two frames, and can only be one
 
 CONVENTION.md §1.3, §1d. As of v16.18.0 the field carries the stacks the GIVER and
-the RECEIVER share (`tiiah/interpret_reactive.cpp:469`), because its main consumer
+the RECEIVER share (`tiiah/interpret_reactive.cpp:557`), because its main consumer
 is the receiver's promise: `reactor0::stamp_receiver_call` rewinds onto it to decide
-what the called card may be (`reactor0/interpret_reaction.cpp:426-451`).
+what the called card may be (`reactor0/interpret_reaction.cpp:427-462`).
 
 The deferral's Rule 3 reads the same field to ask a different question — was the
-REACTER's card playable at clue time (`reactor0/interpret_reaction.cpp:763-777`) —
+REACTER's card playable at clue time (`reactor0/interpret_reaction.cpp:774-788`) —
 and that one wants the giver-and-reacter pair, the view the target walk already
-uses (`tiiah/interpret_reactive.cpp:522`). One field cannot be both, and today the
+uses (`tiiah/interpret_reactive.cpp:610`). One field cannot be both, and today the
 deferral rule reads the receiver's frame.
 
 It has not been seen to cost anything: the two rows differ only once a seat has

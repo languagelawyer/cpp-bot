@@ -58,6 +58,35 @@ State simulate_known_plays(const Game& game, int player,
       game, player, std::nullopt, base);
 }
 
+// THE RECEIVER'S FRAME on the ordinary arm (v23.29.0, the user's ruling;
+// human_vs_bot_diagnostics/2026727.md T9): `base` with the receiver's ALREADY GOTTEN
+// known plays laid -- `gotten`, the cards the target walk passes over as called, judged
+// before the clue (`gotten_plays`) -- each as its one team reading, so every seat,
+// the receiver's own included, lays the same cards. A card read as more than one
+// identity is not laid, and neither is `except`, the card being read. §1c's stack
+// simulation, which the reverse arm has always run (`reacter_faces`).
+State receiver_faces(const Game& game, const State& base, const std::vector<int>& gotten,
+                     int except = -1) {
+  // A gotten card read is the every-target-gotten fallback's target (v18.5.0), which
+  // `receiver_targets` judged on the unsimulated frame: nothing is laid.
+  if (std::find(gotten.begin(), gotten.end(), except) != gotten.end()) return base;
+  State out = base;
+  std::vector<bool> laid(gotten.size(), false);
+  for (bool advanced = true; advanced;) {
+    advanced = false;
+    for (std::size_t k = 0; k < gotten.size(); ++k) {
+      const int o = gotten[k];
+      if (laid[k] || o < 0 || o >= static_cast<int>(game.common.thoughts.size())) continue;
+      const IdentitySet live = game.common.thoughts[o].possibilities();
+      if (live.length() != 1 || !out.is_playable(live.head())) continue;
+      out = out.with_play(live.head());
+      laid[k] = true;
+      advanced = true;
+    }
+  }
+  return out;
+}
+
 // THE STACKS THE REACTER WILL FACE, which is what every test below is really
 // asking. Under the REVERSE reactive the receiver goes first -- he plays the
 // known play that made the clue reactive at all -- so his queued plays are in.
@@ -182,8 +211,11 @@ BucketReading bucket_over_worlds(const Game& game, const State& base, int holder
 // seed 2 T45 (human_vs_bot_diagnostics/9000002.md): Blue to sim-bob pairs sim-alice's
 // `{r5,b5}` (only the r5 plays) with sim-bob's o44, the only playable blue; both name
 // their card, though the bucket names neither, and it gets two plays to Red's one.
+// `recv_faced` is the receiver's frame, after its own known plays (v23.29.0); the
+// reacter's card is judged on `faced`, the stacks it faces. Omitted, they are one.
 bool both_know_their_own(const Game& game, int react_order, int target_order,
-                         const State* faced = nullptr, bool true_readings = false) {
+                         const State* faced = nullptr, bool true_readings = false,
+                         const State* recv_faced = nullptr) {
   const auto& react_live = game.common.thoughts[react_order].possibilities();
   const auto& target_live = game.common.thoughts[target_order].possibilities();
   if (react_live.length() == 1 && target_live.length() == 1) return true;
@@ -199,7 +231,9 @@ bool both_know_their_own(const Game& game, int react_order, int target_order,
   const IdentitySet react_plays =
       react_empathy.filter([faced](Identity i) { return faced->is_playable(i); });
   if (react_plays.length() != 1) return false;
-  const State landed = faced->with_play(react_plays.head());
+  const State& recv = recv_faced ? *recv_faced : *faced;
+  const State landed =
+      recv.is_playable(react_plays.head()) ? recv.with_play(react_plays.head()) : recv;
   const IdentitySet target_plays =
       target_empathy.filter([&landed](Identity i) { return landed.is_playable(i); });
   if (target_plays.length() != 1) return false;
@@ -239,12 +273,14 @@ bool receiver_bucket_empty(const State& faced, ClueKind kind, int clue_turn,
 // misread? Judged on public information (the reacter's empathy, the target's
 // possibilities), so every seat that walks reaches the same answer. A pairing that
 // fails it is KNOWN illegal, and the walk goes past it (replay 2022760 T22).
-bool reacter_can_legally_answer(const State& faced, ClueKind kind, int clue_turn,
+// `react_playables` the caller judges on the reacter's frame; the receiver's bucket
+// reading is judged on `recv_faced`, its frame after its own known plays (v23.29.0).
+bool reacter_can_legally_answer(const State& recv_faced, ClueKind kind, int clue_turn,
                                 Identity target_id, const IdentitySet& react_playables,
                                 const IdentitySet& target_poss) {
   return react_playables.exists([&](Identity c) {
-    return bucket_relation_holds(*faced.variant, kind, clue_turn, c, target_id) ||
-           receiver_bucket_empty(faced, kind, clue_turn, c, target_poss);
+    return bucket_relation_holds(*recv_faced.variant, kind, clue_turn, c, target_id) ||
+           receiver_bucket_empty(recv_faced, kind, clue_turn, c, target_poss);
   });
 }
 
@@ -292,15 +328,15 @@ IdentitySet seen_by_holder(const Game& game, int holder, const IdentitySet& set)
 
 // THE GIVER MAY GIVE A GLOBALLY KNOWN VIOLATION LATE IN THE GAME (v23.23.0, the
 // user's call; replay 2026455 T49). Once `high_score_phase`, the giver may pair `react` with
-// `target_id` against the bucket relation, provided neither player can misread it on
-// `faced`: the receiver's bucket reading from `react` finds nothing, and the reacter's
-// empathy `react_live` holds no playable of the bucket the target names. Both then
-// fall back to their playables (the v22.4.0 exception). The giver passes the
-// reacter's empathy as the reacter sees it (`seen_by_holder`, v23.25.0).
-bool violation_known_on(const State& faced, ClueKind kind, int clue_turn,
-                        Identity react, Identity target_id,
+// `target_id` against the bucket relation, provided neither player can misread it: the
+// receiver's bucket reading from `react` finds nothing on its frame `recv_faced` (v23.29.0),
+// and the reacter's empathy `react_live` holds no playable on `faced` of the bucket the
+// target names. Both then fall back to their playables (the v22.4.0 exception). The
+// giver passes the reacter's empathy as the reacter sees it (`seen_by_holder`, v23.25.0).
+bool violation_known_on(const State& faced, const State& recv_faced, ClueKind kind,
+                        int clue_turn, Identity react, Identity target_id,
                         const IdentitySet& react_live, const IdentitySet& target_poss) {
-  if (!receiver_bucket_empty(faced, kind, clue_turn, react, target_poss)) return false;
+  if (!receiver_bucket_empty(recv_faced, kind, clue_turn, react, target_poss)) return false;
   const auto want = bucket_of(*faced.variant, target_id.suit_index);
   if (!want) return false;
   const int from = reacter_bucket_for(*faced.variant, kind, clue_turn, *want);
@@ -449,7 +485,43 @@ bool walked_as_called(const Game& game, const Game& before, int order) {
          (order < static_cast<int>(before.meta.size()) &&
           hanabi::reactor::variants::is_standing_play(before, order));
 }
+
+// The receiver's ALREADY GOTTEN known plays (v23.29.0): the cards the walk passes over
+// as called, and every card the team names (one identity) that those make playable, a
+// known card behind a known play. On the COMMON view, so every seat gets the same set.
+// Replay 2026374 T42: will-bot67's known y5 sat behind its sure y4; laid alone, the y4
+// made the y5 a direct target, and a 5 "got" two plays already on their way.
+std::vector<int> gotten_plays(const Game& game, const Game& before, int receiver) {
+  std::vector<int> out;
+  for (int o : game.state.hands[receiver]) {
+    if (walked_as_called(game, before, o)) out.push_back(o);
+  }
+  const State& s = game.state;
+  const State common = s.with_stacks(s.common_play_stacks);
+  State frame = receiver_faces(game, common, out);
+  for (bool added = true; added;) {
+    added = false;
+    for (int o : s.hands[receiver]) {
+      if (std::find(out.begin(), out.end(), o) != out.end()) continue;
+      const IdentitySet live = game.common.thoughts[o].possibilities();
+      if (live.length() != 1 || !frame.is_playable(live.head())) continue;
+      // Only one the laid plays MAKE playable. One playable already is a sure play or
+      // not by `is_standing_play`'s own test, which weighs the hole (2019676 T31: a
+      // known p2 a hole card could be is still a target).
+      if (common.is_playable(live.head())) continue;
+      out.push_back(o);
+      frame = frame.with_play(live.head());
+      added = true;
+    }
+  }
+  return out;
+}
 }  // namespace
+
+State lay_gotten_plays(const Game& game, const State& base, const std::vector<int>& gotten,
+                       int except) {
+  return receiver_faces(game, base, gotten, except);
+}
 
 std::vector<ReceiverTarget> receiver_targets(const Game& game, int receiver,
                                              bool receiver_acts_first,
@@ -457,14 +529,30 @@ std::vector<ReceiverTarget> receiver_targets(const Game& game, int receiver,
                                              const Game* before) {
   const Game& pre = before ? *before : game;
   const State& s = game.state;
-  const State after = reacter_faces(game, receiver, receiver_acts_first, base);
+  // The target is walked under STACK SIMULATION on both arms (v23.29.0, the user's
+  // ruling; human_vs_bot_diagnostics/2026727.md T9): on the stacks after the
+  // receiver's own known plays, the "already gotten" cards the walk passes over.
+  // Until v23.29.0 only the reverse arm simulated them, where the receiver moves
+  // first. Replay 2026727 T9: will-bot67 held a known b2 and the b3, blue on 1;
+  // unsimulated, the b3 and the r3 were both one away and the r3 was walked as a
+  // finesse, where the b3 is a direct target once the b2 is in.
+  // The every-target-gotten fallback below reads the called cards themselves, so it
+  // keeps the frame the reacter faces, where they are not yet played.
+  const std::vector<int> gotten =
+      receiver_acts_first ? std::vector<int>{} : gotten_plays(game, pre, receiver);
+  const State unsimulated = reacter_faces(game, receiver, receiver_acts_first, base);
+  // The reverse arm's frame has them in already (`reacter_faces`).
+  const State after =
+      receiver_acts_first ? unsimulated : receiver_faces(game, unsimulated, gotten);
   std::vector<ReceiverTarget> direct;
   std::vector<ReceiverTarget> one_away;
   std::vector<ReceiverTarget> inverted;
   for (int o : s.hands[receiver]) {
     // A card already called to play is one of the plays we just simulated, so
-    // it is not waiting on anything: never retargeted (§1c). Nor is a sure play.
+    // it is not waiting on anything: never retargeted (§1c). Nor is a sure play,
+    // nor (v23.29.0) a known card those make playable.
     if (walked_as_called(game, pre, o)) continue;
+    if (std::find(gotten.begin(), gotten.end(), o) != gotten.end()) continue;
     auto id = s.deck[o].id();
     if (!id) continue;  // our own hand; the receiver decodes at reaction time
     const int away = after.playable_away(*id);
@@ -496,7 +584,7 @@ std::vector<ReceiverTarget> receiver_targets(const Game& game, int receiver,
       auto id = s.deck[o].id();
       if (!id) continue;
       if (s.variant->suits[id->suit_index].suit_type.inverted) continue;
-      const int away = after.playable_away(*id);
+      const int away = unsimulated.playable_away(*id);
       if (away == 0) called_direct.push_back({o, *id, away});
       if (away == 1) called_one_away.push_back({o, *id, away});
     }
@@ -546,7 +634,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
   // `wc.turn`, never from the turn they are reading on.
   const int clue_turn = wc.turn;
   // The frame the giver chose the target in, and the one `stamp_receiver_call`
-  // builds the receiver's reading in (`reactor0/interpret_reaction.cpp:419-444`).
+  // builds the receiver's reading in (`reactor0/interpret_reaction.cpp:420-445`).
   // A deferral resolves later, against stacks that have moved, and under TIIAH
   // they may also have moved differently for different seats — so the reading has
   // to bind to a view that does not move with our own.
@@ -560,7 +648,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
   // reading -- so the receiver never played the `b2` it had been handed.
   //
   // One frame, two questions: the deferral's Rule 3
-  // (`reactor0/interpret_reaction.cpp:749-763`) reads the same field to ask
+  // (`reactor0/interpret_reaction.cpp:760-774`) reads the same field to ask
   // whether the REACTER's card was playable at clue time, which wants the giver's
   // and the reacter's pair instead. Recorded in TODO.md rather than fixed here.
   //
@@ -583,6 +671,9 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     wc.clue_play_stacks =
         reacter_faces(game, receiver, /*receiver_acts_first=*/true, &pair).play_stacks;
   } else {
+    // The ordinary arm's receiver frame also lays its already gotten plays
+    // (v23.29.0), but only once its target is known: `reactor0::stamp_receiver_call`
+    // lays `receiver_called` on this frame, the target excepted.
     wc.clue_play_stacks = state.stacks_known_to_both(action.giver, receiver);
   }
   // Which seat moves first, and so which stacks everything below is judged
@@ -598,8 +689,8 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
   // records nothing.
   if (!receiver_acts_first) {
     wc.receiver_frame = state.common_play_stacks;
+    wc.receiver_called = gotten_plays(game, prev, receiver);
     for (int o : state.hands[receiver]) {
-      if (walked_as_called(game, prev, o)) wc.receiver_called.push_back(o);
       if (o < static_cast<int>(prev.state.deck.size()) && prev.state.deck[o].clued) {
         wc.receiver_clued.push_back(o);  // known before this clue (v20.21.0)
       }
@@ -663,6 +754,15 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
   const std::vector<int> pair_view = reacter_frame(game, action.giver, reacter);
   const State after =
       reacter_faces(game, receiver, receiver_acts_first, &pair_view);
+  // ...and the frame the RECEIVER's target is judged on: after its own known plays,
+  // on both arms (v23.29.0, the user's ruling; human_vs_bot_diagnostics/2026727.md T9).
+  // The reacter's card stays on `after`: on the ordinary arm it moves first.
+  const std::vector<int> gotten = gotten_plays(game, prev, receiver);
+  // The receiver's frame for one target: never laying the target itself, which the
+  // every-target-gotten fallback (v18.5.0) walks to.
+  auto recv_frame = [&](const State& base, int target_order) {
+    return receiver_acts_first ? base : receiver_faces(game, base, gotten, target_order);
+  };
   // ASCR IN THE WALK (§1e, v20.6.0, the user's ruling; it absorbs v19.3.0's world
   // fallback). The frame is a MINIMUM over the hole's worlds, so a pairing that
   // fails on it -- the reacter's card unplayable, or a one-away target with no
@@ -700,17 +800,22 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     if (ascr_worlds.size() < 2) return AscrOutcome::NONE;  // one world is the frame
     // The stacks the reacter faces in each world, after the receiver's queued plays,
     // where this target plays outright.
+    // The target is judged on the receiver's frame in each world, the reacter's card
+    // on the stacks it faces there (v23.29.0).
     std::vector<std::optional<State>> faced(ascr_worlds.size());
+    std::vector<std::optional<State>> recv_faced(ascr_worlds.size());
     std::vector<std::optional<Identity>> bridge(ascr_worlds.size());
     IdentitySet bridges = IdentitySet::empty();
     for (std::size_t w = 0; w < ascr_worlds.size(); ++w) {
-      State f = reacter_faces(game, receiver, receiver_acts_first,
-                              &ascr_worlds[w]->state.play_stacks);
-      const int away = f.playable_away(target.id);
+      State reacts = reacter_faces(game, receiver, receiver_acts_first,
+                                   &ascr_worlds[w]->state.play_stacks);
+      State rf = recv_frame(reacts, target.order);
+      const int away = rf.playable_away(target.id);
       if (away == 0) {
-        faced[w] = std::move(f);
+        faced[w] = std::move(reacts);
+        recv_faced[w] = std::move(rf);
       } else if (world_one_away && away == 1) {
-        if (auto c = hanabi::reactor::variants::connector_of(f, target.id)) {
+        if (auto c = hanabi::reactor::variants::connector_of(rf, target.id)) {
           bridge[w] = *c;
           bridges = bridges.add(*c);
         }
@@ -725,6 +830,10 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     auto faced_in = [&](const OpenWorld& w) -> const State* {
       const std::size_t k = index_of(w);
       return k < ascr_worlds.size() && faced[k] ? &*faced[k] : nullptr;
+    };
+    auto recv_in = [&](const OpenWorld& w) -> const State* {
+      const std::size_t k = index_of(w);
+      return k < ascr_worlds.size() && recv_faced[k] ? &*recv_faced[k] : nullptr;
     };
     const IdentitySet react_live =
         hanabi::reactor::effective_possible_for(game, react_order);
@@ -745,13 +854,14 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     // g3 played directly, but o17 could only answer as the m1, and the receiver would
     // have read the r3. At pace <= 1 a pairing may break the relation (v18.4.0).
     const IdentitySet target_poss = game.common.thoughts[target.order].possibilities();
+    const State recv_after_t = recv_frame(after, target.order);
     auto works = [&](const OpenWorld& w, Identity i) {
       const std::size_t k = index_of(w);
       if (k < ascr_worlds.size() && bridge[k]) return i == *bridge[k];
       const State* f = faced_in(w);
       if (!f || !f->is_playable(i)) return false;
       return in_bucket.contains(i) || state.pace() <= 1 ||
-             receiver_bucket_empty(*f, action.clue.kind, clue_turn, i, target_poss);
+             receiver_bucket_empty(*recv_in(w), action.clue.kind, clue_turn, i, target_poss);
     };
     // The connector of a one-away world is the finesse half; it stands with the
     // bucket half, as one reading (2023126: `{r2}` where red was 1, `{g2,b2}` where 2).
@@ -781,7 +891,8 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
       if (action.giver == state.our_player_index && state.pace() > 1 &&
           !bucket_relation_holds(*state.variant, action.clue.kind, clue_turn, *actual,
                                  target.id) &&
-          !both_know_their_own(game, react_order, target.order, &after, true)) {
+          !both_know_their_own(game, react_order, target.order, &after, true,
+                               &recv_after_t)) {
         return AscrOutcome::REJECT;
       }
     }
@@ -837,6 +948,8 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
       continue;
     }
     const int react_order = state.hands[reacter][react_slot - 1];
+    // The receiver's frame for this target (v23.29.0).
+    const State recv_after = recv_frame(after, target.order);
 
     // An inverted target comes back from the walk only when the receiver has
     // nothing else, and then the clue is a DOUBLE CHUCK: both players press
@@ -881,9 +994,9 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     // well as on the pair's frame. The two seats of a pair can hold different rows,
     // and a verdict that rests on one row alone steers the giver and the reacter to
     // different pairings (self-play 6 Suits, seeds 54 and 212).
-    auto known_violation = [&](const State& faced) {
+    auto known_violation = [&](const State& faced, const State& recv_faced) {
       return !reacter_can_legally_answer(
-          faced, action.clue.kind, clue_turn, target.id,
+          recv_faced, action.clue.kind, clue_turn, target.id,
           react_live.filter([&faced](Identity i) { return faced.is_playable(i); }),
           game.common.thoughts[target.order].possibilities());
     };
@@ -892,10 +1005,12 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     // whatever the bucket says, and every seat reads it so.
     const State common_faced =
         reacter_faces(game, receiver, receiver_acts_first, &state.common_play_stacks);
-    if (!connector && !double_chuck && state.pace() > 1 && known_violation(after) &&
-        known_violation(common_faced) &&
-        !(both_know_their_own(game, react_order, target.order, &after) &&
-          both_know_their_own(game, react_order, target.order, &common_faced))) {
+    const State common_recv = recv_frame(common_faced, target.order);
+    if (!connector && !double_chuck && state.pace() > 1 &&
+        known_violation(after, recv_after) && known_violation(common_faced, common_recv) &&
+        !(both_know_their_own(game, react_order, target.order, &after, false, &recv_after) &&
+          both_know_their_own(game, react_order, target.order, &common_faced, false,
+                              &common_recv))) {
       const AscrOutcome r = ascr_pairing(target, react_order);
       if (r == AscrOutcome::READ) return ClueInterp::REACTIVE;
       if (r == AscrOutcome::REJECT) return std::nullopt;
@@ -943,7 +1058,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
           !endgame &&
           !bucket_relation_holds(*state.variant, action.clue.kind, clue_turn, *actual,
                                  target.id) &&
-          !both_know_their_own(game, react_order, target.order, &after, true)) {
+          !both_know_their_own(game, react_order, target.order, &after, true, &recv_after)) {
         // A globally known violation (below, the walk) is one readers understand,
         // but the giver does not give one (v22.4.0): taking the exception here cost
         // 0.3 points and 9 strikeouts per 300 games of 6 Suits in self-play.
@@ -957,10 +1072,10 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
         const IdentitySet react_sees = seen_by_holder(game, reacter, react_live);
         const bool late_break =
             high_score_phase(state, clue_turn) &&
-            violation_known_on(after, action.clue.kind, clue_turn, *actual, target.id,
-                               react_sees, target_poss) &&
-            violation_known_on(common_faced, action.clue.kind, clue_turn, *actual,
-                               target.id, react_sees, target_poss);
+            violation_known_on(after, recv_after, action.clue.kind, clue_turn, *actual,
+                               target.id, react_sees, target_poss) &&
+            violation_known_on(common_faced, common_recv, action.clue.kind, clue_turn,
+                               *actual, target.id, react_sees, target_poss);
         if (!late_break) return std::nullopt;
         hanabi::logging::log_branch("tiiah.late_bucket_break",
                                     {{"target", target.order}, {"react_order", react_order}});
@@ -1055,7 +1170,11 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
                           ? reacter_faces(game, receiver, receiver_acts_first,
                                           &state.play_stacks)
                           : after;
-    const int own_away = own.playable_away(target.id);
+    // How far the TARGET is, on the receiver's frame: after its own known plays
+    // (v23.29.0). On the ordinary arm `own` lacks them, and a target its own queued
+    // play makes direct would read as a finesse through it.
+    const State own_recv = recv_frame(own, target.order);
+    const int own_away = own_recv.playable_away(target.id);
     std::optional<Identity> own_connector;
     if (own_away == 1) {
       own_connector = hanabi::reactor::variants::connector_of(state, target.id);
@@ -1611,12 +1730,17 @@ void receiver_world_fallback(const Game& prev, Game& game, const ReactorWC& wc,
   // The reverse reactive reads on the giver's and the reacter's frame (v22.8.0,
   // `interpret_reactive` above), at every seat alike.
   const bool reverse = wc.receiver == s.next_player_index(wc.giver);
-  const State base =
+  State base =
       reverse ? s.with_stacks(reacter_frame(game, wc.giver, wc.reacter))
                     .with_band(s.evidence_known_to_both(wc.giver, wc.reacter))
       : at_receiver ? s.private_base()
                     : s.with_stacks(s.stacks_known_to_both(wc.giver, wc.receiver))
                           .with_band(s.evidence_known_to_both(wc.giver, wc.receiver));
+  // ...after the receiver's own known plays on the ordinary arm (v23.29.0): its
+  // target was walked on them. Without them a target its queued play makes direct
+  // reads through the bucket as the queued card itself (replay 2026727 T9: o6, the
+  // b3, behind the known b2).
+  if (!reverse) base = receiver_faces(game, base, wc.receiver_called, target);
   const std::vector<int> holders =
       at_receiver ? std::vector<int>{wc.receiver}
                   : std::vector<int>{wc.receiver, wc.giver};
@@ -1785,12 +1909,17 @@ void narrow_receiver_call(const Game& prev, Game& game, const ReactorWC& wc,
   // The reverse reactive reads on the giver's and the reacter's frame (v22.8.0,
   // `interpret_reactive` above), at every seat alike.
   const bool reverse = wc.receiver == s.next_player_index(wc.giver);
-  const State base =
+  State base =
       reverse ? s.with_stacks(reacter_frame(game, wc.giver, wc.reacter))
                     .with_band(s.evidence_known_to_both(wc.giver, wc.reacter))
       : at_receiver ? s.private_base()
                     : s.with_stacks(s.stacks_known_to_both(wc.giver, wc.receiver))
                           .with_band(s.evidence_known_to_both(wc.giver, wc.receiver));
+  // ...after the receiver's own known plays on the ordinary arm (v23.29.0): its
+  // target was walked on them. Without them a target its queued play makes direct
+  // reads through the bucket as the queued card itself (replay 2026727 T9: o6, the
+  // b3, behind the known b2).
+  if (!reverse) base = receiver_faces(game, base, wc.receiver_called, target);
   const std::vector<int> holders =
       at_receiver ? std::vector<int>{wc.receiver}
                   : std::vector<int>{wc.receiver, wc.giver};
@@ -1959,6 +2088,10 @@ void annotate_candidate(const Game& game, const Game& hypo,
   const State& hs = hypo.state;
   State base = hs.with_stacks(hs.stacks_known_to_both(giver, receiver))
                    .with_band(hs.evidence_known_to_both(giver, receiver));
+  // ...after the receiver's own known plays on the ordinary arm, as it reads it
+  // (v23.29.0, `narrow_receiver_call`): the ones it held before this clue.
+  const bool reverse = receiver == s.next_player_index(giver);
+  if (!reverse) base = receiver_faces(game, base, gotten_plays(game, game, receiver), target);
   if (seen && base.is_playable(*seen)) base = base.with_play(*seen);
   const auto worlds = open_worlds(hypo, base, std::vector<int>{receiver, giver});
   // The turn the candidate clue would be given on: this one.
@@ -2001,7 +2134,11 @@ void annotate_candidate(const Game& game, const Game& hypo,
     // the receiver names its card by its one playable reading, the card it is
     // (v23.14.0; human_vs_bot_diagnostics/9000009.md T29).
     const State frame = hs.with_stacks(hs.stacks_known_to_both(giver, receiver));
-    if (!both_know_their_own(hypo, react_order, target, &frame, /*true_readings=*/true)) {
+    const State recv_frame =
+        reverse ? frame
+                : receiver_faces(game, frame, gotten_plays(game, game, receiver), target);
+    if (!both_know_their_own(hypo, react_order, target, &frame, /*true_readings=*/true,
+                             &recv_frame)) {
       c.misnames_a_card = true;
     }
   }

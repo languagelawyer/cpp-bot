@@ -942,7 +942,11 @@ Six rules govern it:
    is that `stamp_receiver_call` winds `play_stacks` back to
    `clue_play_stacks` before building the allowed set, so the promise is read in
    the frame the giver chose it in. Criticality still reads the CURRENT discard
-   piles: a card discarded since really is gone.
+   piles: a card discarded since really is gone. Under Throw It in a Hole's
+   ORDINARY reactive, the receiver's already gotten known plays are laid on both
+   frames as well, the target excepted, since that is where its target was walked
+   (`reactor0/interpret_reaction.cpp:448-457`, v23.29.0; tiiah/CONVENTION.md §1c,
+   replay 2026727 T9).
 5. **A reading nothing can still satisfy is DROPPED, not stamped.** Rule 4 reads
    the *promise* in the giver's frame, which is what makes "slot 2 then, slot 3
    now" decodable at all. But while the reacter deferred, somebody else may have
@@ -950,7 +954,7 @@ Six rules govern it:
    cannot see that. So the reading is vetted a second time against the LIVE
    stacks, and a call with no surviving identity that is playable *now* is
    forgotten rather than bombed on. Applied to a DEFERRED reaction only
-   (`deferred`, `reactor0/interpret_reaction.cpp:475`, v16.28.0). Under reactor0
+   (`deferred`, `reactor0/interpret_reaction.cpp:486`, v16.28.0). Under reactor0
    that changes nothing -- when the reacter answers immediately no other seat has
    moved, so the two frames coincide -- but Throw It in a Hole reads the frame
    off the view the giver and receiver SHARE while the live stacks are our own

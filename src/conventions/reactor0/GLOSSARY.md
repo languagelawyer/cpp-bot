@@ -307,7 +307,7 @@ their chop is expendable, or they already hold a known play, a
 clue from its candidate set when a stable clue to Bob would instead get a card
 played. The dedicated filter this named was removed in v7.0.0; the rule now
 lives in the General Clue Evaluation List's priority 2 admissibility condition,
-`discard_is_affordable` (`src/conventions/reactor0/decision.cpp:377-383`).
+`discard_is_affordable` (`src/conventions/reactor0/decision.cpp:420-426`).
 Reactive locks are exempt. Named from replay 1942181 T41.
 
 ### call invariants
@@ -435,12 +435,12 @@ The rlocks reading: a reactive dc-target on the receiver's **oldest slot**
 locks the whole hand (`CHOP_MOVED` on every card) instead of calling a
 discard. Applies uniformly in both dc modes and conservatively even when
 the oldest slot is actually trash. Bound at clue time via
-`ReactorWC::rlocks`. `src/conventions/reactor0/interpret_reaction.cpp:26-51`.
+`ReactorWC::rlocks`. `src/conventions/reactor0/interpret_reaction.cpp:27-52`.
 Exempt from the pointless-double-discard filter — a lock protects a whole hand,
 so it is never a
 *pointless double discard*. Because the `CHOP_MOVED` stamps land a turn later
 at resolution, the giver predicts the reading at clue time instead, via
-`predicts_reactive_lock` (`:31-49`).
+`predicts_reactive_lock` (`:32-50`).
 
 ### rlocks (`allow_reactive_locks`)
 The flag enabling the reactive lock. Default per variant: **off** in four families
@@ -670,7 +670,7 @@ As a clue SHAPE (`ClueShape::TRASH_REVEAL`, what DECISION_MAKING.md 3.3 / 4.2
 select), it is wider: any stable clue after which a card in Bob's hand is known
 trash to the team that was not before — including a colour or rank clue that
 narrows an already-clued card to trash, which interpretation reads as FIX, REVEAL
-or STALL (v16.23.0; `read_stable`, `decision.cpp:178-207`; replay 2011327 T22).
+or STALL (v16.23.0; `read_stable`, `decision.cpp:179-208`; replay 2011327 T22).
 
 ### Absent by design
 Concepts reactor has that reactor0 deliberately lacks: **reactive focus**
