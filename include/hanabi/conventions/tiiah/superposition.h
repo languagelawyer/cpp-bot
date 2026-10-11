@@ -292,6 +292,20 @@ struct OwnHolePlayReading {
 };
 OwnHolePlayReading own_hole_play_reading(const Game& game, int order);
 
+// What OUR OWN card can be by the team's reading and our own eyes together
+// (v23.36.0): the team's set (`common`) less every identity we can SEE is
+// unplayed -- each copy in a partner's hand or thrown on the wire
+// (`unplayed_in_sight`). Not our whole `possible`: that also rules out copies our
+// own bookkeeping counts as played, which the seats that watched the card need not
+// share (replay 2018874 T20: an r1 so ruled out changed a reaction's reading). The
+// team's set itself when that leaves nothing. Where our seat reads its own card it
+// cannot see: the
+// reacter's card behind the receiver's call (`narrow_receiver_call`,
+// `receiver_world_fallback`), and the hole note. Replay 2027736 T47-T48: the team
+// read will-bot67's o44 as `{r4,b5,p3,i1}`; will-bot67 saw the only b5 and both p3s,
+// so `{r4,i1}`. Read through the team's set, its p3 named the receiver's b5 the p4.
+IdentitySet own_card_by_sight(const Game& game, int order);
+
 // CORE RULE 2 FOR THE TEAM (v23.12.0): the same reading once EVERY seat can rule the
 // team's reading of a called card out -- elimination has emptied it, so every copy
 // of what it named is accounted for elsewhere. The call stands and the card is any

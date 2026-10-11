@@ -5,6 +5,7 @@
 #include "hanabi/basics/card.h"
 #include "hanabi/basics/game.h"
 #include "hanabi/basics/identity.h"
+#include "hanabi/basics/stack_invariant.h"
 #include "hanabi/basics/state.h"
 
 namespace hanabi::net {
@@ -46,6 +47,22 @@ IdentitySet hole_reading(const ConvData& m) {
   if (m.superposed()) return m.superposition;
   if (m.named_in_hole.non_empty()) return m.named_in_hole;
   return m.private_named;
+}
+
+// ...and for OUR OWN hole card, less what we can see is unplayed (v23.36.0,
+// `tiiah::own_card_by_sight`'s test). The stored set stays the team's, what a partner
+// predicts from (§1e rule 3's private form); the note is our own reading. Replay
+// 2027736 T48: will-bot67's o44 noted `r4,b5,p3,i1`, with the only b5 and both p3s
+// in its view.
+IdentitySet hole_reading(const Game& g, int order) {
+  const IdentitySet set = hole_reading(g.meta[order]);
+  const State& s = g.state;
+  if (!g.meta[order].superposed() || order >= static_cast<int>(s.holders.size()) ||
+      s.holders[order] != s.our_player_index) {
+    return set;
+  }
+  const IdentitySet seen = set.filter([&s](Identity i) { return !unplayed_in_sight(s, i); });
+  return seen.non_empty() ? seen : set;
 }
 
 bool contains(const std::vector<int>& v, int x) {
@@ -142,9 +159,9 @@ std::vector<std::pair<int, std::string>> compute_note_segments(const Game& prev,
     // had left the hand. A card that left the hand with a known identity has no hole
     // reading, and gets no note.
     if (!in_any_hand(state, order)) {
-      const IdentitySet now = hole_reading(cur.meta[order]);
+      const IdentitySet now = hole_reading(cur, order);
       const IdentitySet before =
-          order < prev_meta_len ? hole_reading(prev.meta[order]) : IdentitySet::empty();
+          order < prev_meta_len ? hole_reading(prev, order) : IdentitySet::empty();
       if (now != before && !now.is_empty() && now.length() <= kEmpathyNoteMax) {
         out.emplace_back(order, format_empathy_segment(state.turn_count, now, state));
         continue;

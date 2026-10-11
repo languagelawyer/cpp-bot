@@ -100,9 +100,20 @@ State receiver_faces(const Game& game, const State& base, const std::vector<int>
 // giver is the one who has to be able to predict them. Passing the shared view
 // (an empty `base`) is the pre-v16.12.0 behaviour and the fallback for a seat
 // that is neither of the two.
+//
+// The receiver's queued plays are the ones the team knew BEFORE the clue (`before`,
+// v23.36.0), as the ordinary arm's gotten plays are (v23.20.0, `walked_as_called`):
+// a card this very clue makes known is what the clue is about, not a play already
+// on its way. Replay 2027736 T51: a 2 to will-bot69 touched its r2 and its gray-pink
+// i5, so by elimination its untouched o27 `{p3,gr3,gr4,gr5}` read `{p3}`. Laid as
+// queued, the p3 left the walk only the p5 behind it as a finesse; the clue read as
+// a MISTAKE, though yagami's i3 answering the p3 was the clue meant.
 State reacter_faces(const Game& game, int receiver, bool receiver_acts_first,
-                    const std::vector<int>* base) {
-  if (receiver_acts_first) return simulate_known_plays(game, receiver, base);
+                    const std::vector<int>* base, const Game* before = nullptr) {
+  if (receiver_acts_first) {
+    if (!before) return simulate_known_plays(game, receiver, base);
+    return game.state.with_stacks(simulate_known_plays(*before, receiver, base).play_stacks);
+  }
   return base ? game.state.with_stacks(*base) : game.state.shared_view();
 }
 
@@ -540,7 +551,7 @@ std::vector<ReceiverTarget> receiver_targets(const Game& game, int receiver,
   // keeps the frame the reacter faces, where they are not yet played.
   const std::vector<int> gotten =
       receiver_acts_first ? std::vector<int>{} : gotten_plays(game, pre, receiver);
-  const State unsimulated = reacter_faces(game, receiver, receiver_acts_first, base);
+  const State unsimulated = reacter_faces(game, receiver, receiver_acts_first, base, &pre);
   // The reverse arm's frame has them in already (`reacter_faces`).
   const State after =
       receiver_acts_first ? unsimulated : receiver_faces(game, unsimulated, gotten);
@@ -669,7 +680,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
   if (receiver == state.next_player_index(action.giver)) {
     const std::vector<int> pair = reacter_frame(game, action.giver, reacter);
     wc.clue_play_stacks =
-        reacter_faces(game, receiver, /*receiver_acts_first=*/true, &pair).play_stacks;
+        reacter_faces(game, receiver, /*receiver_acts_first=*/true, &pair, &prev).play_stacks;
   } else {
     // The ordinary arm's receiver frame also lays its already gotten plays
     // (v23.29.0), but only once its target is known: `reactor0::stamp_receiver_call`
@@ -753,7 +764,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
   // of what their own card is.
   const std::vector<int> pair_view = reacter_frame(game, action.giver, reacter);
   const State after =
-      reacter_faces(game, receiver, receiver_acts_first, &pair_view);
+      reacter_faces(game, receiver, receiver_acts_first, &pair_view, &prev);
   // ...and the frame the RECEIVER's target is judged on: after its own known plays,
   // on both arms (v23.29.0, the user's ruling; human_vs_bot_diagnostics/2026727.md T9).
   // The reacter's card stays on `after`: on the ordinary arm it moves first.
@@ -808,7 +819,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     IdentitySet bridges = IdentitySet::empty();
     for (std::size_t w = 0; w < ascr_worlds.size(); ++w) {
       State reacts = reacter_faces(game, receiver, receiver_acts_first,
-                                   &ascr_worlds[w]->state.play_stacks);
+                                   &ascr_worlds[w]->state.play_stacks, &prev);
       State rf = recv_frame(reacts, target.order);
       const int away = rf.playable_away(target.id);
       if (away == 0) {
@@ -1004,7 +1015,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     // (v23.14.0, the user's ruling; `both_know_their_own`): then the pairing is legal
     // whatever the bucket says, and every seat reads it so.
     const State common_faced =
-        reacter_faces(game, receiver, receiver_acts_first, &state.common_play_stacks);
+        reacter_faces(game, receiver, receiver_acts_first, &state.common_play_stacks, &prev);
     const State common_recv = recv_frame(common_faced, target.order);
     if (!connector && !double_chuck && state.pace() > 1 &&
         known_violation(after, recv_after) && known_violation(common_faced, common_recv) &&
@@ -1168,7 +1179,7 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     // wrote `{y3}` on a card that was a `g3` and played it into a strike.
     const State own = reacter == state.our_player_index
                           ? reacter_faces(game, receiver, receiver_acts_first,
-                                          &state.play_stacks)
+                                          &state.play_stacks, &prev)
                           : after;
     // How far the TARGET is, on the receiver's frame: after its own known plays
     // (v23.29.0). On the ordinary arm `own` lacks them, and a target its own queued
@@ -1709,7 +1720,7 @@ void receiver_world_fallback(const Game& prev, Game& game, const ReactorWC& wc,
   if (played) {
     react_live = IdentitySet::single(*played);
   } else {
-    react_live = prev.common.thoughts[react_order].possibilities();
+    react_live = own_card_by_sight(prev, react_order);  // v23.36.0, as below
     std::optional<int> one;
     bool single = react_live.non_empty();
     for (Identity i : react_live) {
@@ -1883,11 +1894,17 @@ void narrow_receiver_call(const Game& prev, Game& game, const ReactorWC& wc,
   // before the walk runs (they cannot see their own hand to find the target),
   // so in THEIR game the reacter's card was never narrowed at all. What they
   // have instead is better — they watched the card.
+  //
+  // ...less what our own eyes rule out, at the reacter's seat (v23.36.0,
+  // `own_card_by_sight`): the other two seats watched the card, so a candidate we
+  // can see elsewhere only parts our call from theirs. Replay 2027736 T48: o44 read
+  // through the team's `{r4,b5,p3,i1}` called will-bot69's b5 the p4 (the p3's
+  // finesse); every other seat, from the i1 it watched, called the b5.
   IdentitySet react_live = IdentitySet::empty();
   if (auto played = prev.state.deck[react_order].id()) {
     react_live = IdentitySet::single(*played);
   } else {
-    react_live = prev.common.thoughts[react_order].possibilities();
+    react_live = own_card_by_sight(prev, react_order);
   }
   if (!react_live.non_empty()) return;
 

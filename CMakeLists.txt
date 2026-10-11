@@ -435,6 +435,7 @@ add_executable(hanabi_decision_tests
   tests/test_tiiah/test_decision_making/test_selfplay_9000016_no_clue_for_a_second_called_copy.cpp
   tests/test_tiiah/test_decision_making/test_replay_2026882_save_cathys_critical_chop.cpp
   tests/test_tiiah/test_decision_making/test_replay_2027454_reacts_to_the_g3.cpp
+  tests/test_tiiah/test_decision_making/test_replay_2027736_reverse_reactive_two.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000081_both_name_their_card_late.cpp
   tests/test_tiiah/test_decision_making/test_replay_2024676_finesse_duping_a_call_is_not_very_high.cpp
   tests/test_tiiah/test_decision_making/test_replay_2025193_no_five_ahead_of_a_lower_playable.cpp
@@ -638,6 +639,7 @@ add_executable(hanabi_tiiah_tests
   tests/test_tiiah/test_replay_2026832_play_call_replaces_discard_call.cpp
   tests/test_tiiah/test_replay_2026856_known_play_over_low_clue.cpp
   tests/test_tiiah/test_replay_2027454_own_play_not_named_by_seen_card.cpp
+  tests/test_tiiah/test_replay_2027736_receiver_call_read_through_own_sight.cpp
   tests/test_tiiah/test_self_colour_bluff.cpp
   tests/test_tiiah/test_known_bucket_violation.cpp
   tests/test_tiiah/test_replay_2019598_named_card_refutes_finesse_world.cpp

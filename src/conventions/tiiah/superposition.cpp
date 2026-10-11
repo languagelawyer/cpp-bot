@@ -1567,6 +1567,13 @@ OwnHolePlayReading own_hole_play_reading(const Game& game, int order) {
   return {only_one(team), team};
 }
 
+IdentitySet own_card_by_sight(const Game& game, int order) {
+  const IdentitySet team = game.common.thoughts[order].possibilities();
+  const IdentitySet seen =
+      team.filter([&game](Identity i) { return !unplayed_in_sight(game.state, i); });
+  return seen.non_empty() ? seen : team;
+}
+
 IdentitySet team_called_fallback(const Game& game, int order, const IdentitySet& possible) {
   const State& s = game.state;
   if (!s.variant->throw_it_in_a_hole) return IdentitySet::empty();
