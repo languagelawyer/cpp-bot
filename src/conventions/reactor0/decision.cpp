@@ -1264,6 +1264,27 @@ std::vector<ClueCandidate> analyse_clues(
     auto id = s.deck[spared].id();
     may_save_spared = id && !chop_is_duplicated(game, bob_of(game), spared, *id);
   }
+  // Throw It in a Hole: Cathy's chop, when it is hers to lose while Bob is loaded
+  // (tiiah/CONVENTION.md §2v, v23.32.0, the user's ruling). Bob holds a standing
+  // play, so a clue to Cathy is stable (role inversion) and Bob will not stop to save
+  // her chop; Cathy, with no safe action and no standing play of her own, throws it;
+  // and it is critical and not playable. A clue to her that touches it saves it.
+  // Replay 2026882 T25 (human_vs_bot_diagnostics/2026882.md): yagami held a called y2
+  // and will-bot69's chop was the b5, and will-bot67 discarded instead of saving it.
+  const int cathy_chop = [&] {
+    if (!s.variant->throw_it_in_a_hole || !has_cathy(game)) return -1;
+    const int cathy = cathy_of(game);
+    if (!hanabi::reactor::variants::has_standing_play(game, bob_of(game)) ||
+        hanabi::reactor::variants::has_standing_play(game, cathy) ||
+        !has_no_safe_action(game, cathy)) {
+      return -1;
+    }
+    auto chop = game.chop(cathy);
+    if (!chop) return -1;
+    auto id = s.deck[*chop].id();
+    if (!id || !s.is_critical(*id) || s.is_playable(*id)) return -1;
+    return *chop;
+  }();
   for (const auto& [perform, action] : all_clues) {
     if (!std::holds_alternative<ClueAction>(action)) continue;
     const auto& ca = std::get<ClueAction>(action);
@@ -1333,6 +1354,18 @@ std::vector<ClueCandidate> analyse_clues(
       c.lead_in_critical = lead.critical;
       if (lead.cards > 0 && c.tier < ClueTier::HIGH) c.tier = ClueTier::HIGH;
     }
+    // ...and so is a save of Cathy's critical chop while Bob is loaded (§2v, v23.32.0,
+    // the user's ruling): a STABLE clue to her that touches the chop and does not call
+    // it to discard -- the test `saves_stuck_bob_chop` makes of Bob's below. A clue
+    // she reads as reactive is not the save (self-play Black 9000141 T7: a reactive 5
+    // so lifted went ahead of sim-alice's known r1).
+    const bool read_reactive = move && std::holds_alternative<ClueInterp>(*move) &&
+                               std::get<ClueInterp>(*move) == ClueInterp::REACTIVE;
+    c.saves_cathys_critical_chop =
+        cathy_chop >= 0 && ca.target == cathy_of(game) && !read_reactive &&
+        std::find(ca.list_.begin(), ca.list_.end(), cathy_chop) != ca.list_.end() &&
+        hypo.meta[cathy_chop].status != CardStatus::CALLED_TO_DISCARD;
+    if (c.saves_cathys_critical_chop && c.tier < ClueTier::HIGH) c.tier = ClueTier::HIGH;
     // ...but a clue that gets played a copy of a card already called to play is at
     // most MEDIUM (Throw It in a Hole, v23.29.0, the user's ruling): below the bar an
     // occupied seat needs, so a seat holding a call plays it instead. Applied after
@@ -2206,6 +2239,17 @@ const ClueCandidate* rung_unlock_bob(const Game& g, const std::vector<ClueCandid
   return best;
 }
 
+// §2d -- Throw It in a Hole: save Cathy's critical chop while Bob is loaded
+// (tiiah/CONVENTION.md §2v, v23.32.0, the user's ruling and placement): after §2c,
+// ahead of §3, since a loaded Bob's own chop is not at risk this round. The best
+// such clue by the General Clue Evaluation score. Replay 2026882 T25.
+const ClueCandidate* rung_save_cathy_chop(const Game& g,
+                                          const std::vector<ClueCandidate>& cs) {
+  return first_of(g, select(cs, [](const ClueCandidate& c) {
+                    return c.saves_cathys_critical_chop;
+                  }));
+}
+
 // §3.1 also opens at a HIGH CLUE COUNT, whatever Bob's chop (v20.22.0, the user's
 // amendment): with 6 or more tokens the team can afford a stable play clue Bob does
 // not strictly need. Only 3.1 -- the locks, double discards and discard calls below
@@ -3044,6 +3088,8 @@ std::optional<PerformAction> choose_clue(
     rung = "2.reactive_discard";
   } else if ((pick = rung_unlock_bob(game, ok))) {
     rung = "2c.unlock_bob";
+  } else if ((pick = rung_save_cathy_chop(game, ok))) {
+    rung = "2d.save_cathy_chop";
   } else if ((pick = rung_3(game, ok))) {
     rung = "3.bob_chop";
   } else if ((pick = rung_4(game, ok))) {

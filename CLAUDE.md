@@ -96,7 +96,7 @@ cmake --build build -j --target hanabi_reactor0_tests   # build what you need
 build/hanabi_reactor0_tests.exe   # reactor0 only         361 tests,  7 s
 build/hanabi_tests.exe            # convention-neutral    400 tests,  1.4 s
 build/hanabi_reactor_tests.exe    # reactor + replays     125 tests,  7 s
-build/hanabi_decision_tests.exe   # decision quality      276 tests,  0.7 s
+build/hanabi_decision_tests.exe   # decision quality      277 tests,  0.7 s
 build/hanabi_tiiah_tests.exe      # Throw It in a Hole    284 tests,  0.3 s
 ```
 

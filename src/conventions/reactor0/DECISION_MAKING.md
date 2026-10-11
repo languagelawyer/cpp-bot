@@ -51,7 +51,7 @@ down for it (tiiah/CONVENTION.md §2b).
 **The one exception (v23.21.0, the user's ruling).** Such a reactive is not lifted to
 VERY HIGH when it BOTH gets a card a pending reaction will call to play anyway once
 its reacter reacts, AND gets a card the receiver already holds called to play or knows
-plays (`special_play_already_coming`, `decision.cpp:1526-1562`, asked at `:1320-1321`).
+plays (`special_play_already_coming`, `decision.cpp:1559-1595`, asked at `:1341-1342`).
 "Will call anyway" means the receiver target recorded by a standing waiting
 connection, by an owed (deferred) reaction, or by a reacter's own call
 (`react_target_order`). Such a clue spends a token on plays already on their way, so
@@ -65,7 +65,7 @@ pairing that u2 with yagami's r5, already called by a reverse reactive.
 reactive finesse whose connector -- the reacter's card, by sight -- is the identity
 of a card already called to play elsewhere (visibly, or on our own hand when our
 reading is that one card): the reacter would spend its play on a duplicate
-(`finesse_dupes_a_call`, `decision.cpp:2742-2772`, asked at `:2779`). Such a clue
+(`finesse_dupes_a_call`, `decision.cpp:2786-2816`, asked at `:2823`). Such a clue
 can still be chosen at its ordinary tier; it just no longer outranks a reaction.
 Replay [2024676](https://hanab.live/shared-replay/2024676#5) T5 (TIIAH & Dark Null):
 will-bot69 owed its called r2 and instead gave a VERY HIGH 4 to yagami, a finesse
@@ -187,13 +187,28 @@ ruling; [tiiah/CONVENTION.md §2s](../tiiah/CONVENTION.md)).
   Bob's or Cathy's hand, or named in Alice's own.
 - **The code.** `high_score_lead_in` (`reactor0/decision.cpp:1135-1204`) fills
   `ClueCandidate::lead_in_cards`, `lead_in_chain` and `lead_in_critical`, and
-  `analyse_clues` lifts the tier at `:1328-1335`.
+  `analyse_clues` lifts the tier at `:1349-1356`.
 - **How it is given.** Like H5 it is a property of the candidate, and priority **1b**
   below gives it.
 - **Motivating game.** Self-play Dark Null 9000007 T48
   (`human_vs_bot_diagnostics/9000007_23_22.md`): every clue read LOW, and sim-cathy
   chucked at 2 tokens rather than give the 3 that reveals sim-bob's b3, which leads
   into sim-alice's critical b4 and b5.
+
+**H7 — a save of Cathy's critical chop while Bob is loaded** (Throw It in a Hole
+only, v23.32.0, the user's ruling; [tiiah/CONVENTION.md §2v](../tiiah/CONVENTION.md)).
+- **When.** Bob holds a standing play, so a clue to Cathy is stable (role inversion).
+  Cathy has no safe action and no standing play. Her chop is, by Alice's sight,
+  critical and not playable (`reactor0/decision.cpp:1267-1287`).
+- **Which clue.** A stable one to Cathy that touches that chop and does not call it
+  to discard, the test `saves_stuck_bob_chop` makes of Bob's chop. A clue she reads
+  as reactive is not the save. In self-play Black 9000141 T7, a reactive 5 lifted that
+  way went ahead of sim-alice's known r1.
+- **The code.** `ClueCandidate::saves_cathys_critical_chop`, lifted to HIGH in
+  `analyse_clues` (`:1357-1368`) before the cap below. Priority **2d** gives it.
+- **Motivating game.** Replay 2026882 T25 (`human_vs_bot_diagnostics/2026882.md`):
+  yagami held a called y2, and will-bot69's chop was the b5. No rung asked for the
+  save, so will-bot67 discarded a g1, and yagami saved the 5s itself.
 
 **The cap: a second copy of a called card is at most MEDIUM** (Throw It in a Hole
 only, v23.29.0, the user's ruling; [tiiah/CONVENTION.md §2u](../tiiah/CONVENTION.md)).
@@ -202,11 +217,11 @@ only, v23.29.0, the user's ruling; [tiiah/CONVENTION.md §2u](../tiiah/CONVENTIO
     receiver sides where they play, by the giver's sight.
   - The called copies are the cards called to play before the clue. A partner's is
     judged by sight; our own by a one-identity team reading.
-- **What it does.** Applied after every lift above, so it overrides VH1, H1-H6 and
+- **What it does.** Applied after every lift above, so it overrides VH1, H1-H7 and
   TIIAH's own VERY HIGH and HIGH tiers. At MEDIUM a seat holding a call does not give
   the clue (the occupied bar, phase 1 rule 1a), and plays its call instead.
 - **The code.** `gets_a_called_duplicate` (`reactor0/decision.cpp:724-766`), applied
-  in `analyse_clues` at `:1336-1344`. `calls_two_copies_to_play` already drops a
+  in `analyse_clues` at `:1369-1377`. `calls_two_copies_to_play` already drops a
   reactive whose own two cards are copies; this rule looks at the calls standing
   before the clue.
 - **Motivating game.** Self-play Black 9000016 T2
@@ -222,7 +237,7 @@ only, v23.29.0, the user's ruling; [tiiah/CONVENTION.md §2u](../tiiah/CONVENTIO
     seat, which learns the reacter's card only when the reacter acts. It lost 0.2 a
     game on Dark Null.
 
-NOT-LOW iff any of VH1, H2, H3, H4, H5, H6, or:
+NOT-LOW iff any of VH1, H2, H3, H4, H5, H6, H7, or:
 
 6. **N5 — Bob's chop is playable** and is not duplicated in his own hand
    (`has_playable_chop`, `:213-225`; applied at `:691`). Like H1 this is a
@@ -908,7 +923,7 @@ is judged from Alice's own inference, not common knowledge.
    [tiiah/CONVENTION.md §2b](../tiiah/CONVENTION.md)): the clue that leaves the
    receiver the fewest identities for its called card
    (`ClueCandidate::receiver_reading_size`, first in `rung_1`,
-   `reactor0/decision.cpp:1748-1779`). That reading is the tiiah convention's, so it
+   `reactor0/decision.cpp:1781-1812`). That reading is the tiiah convention's, so it
    reaches this list through the optional `CandidateAnnotator` that `analyse_clues`
    calls with each candidate's hypo — the engine passes one under TIIAH and nothing
    otherwise, the field stays 0, and the term separates nothing.
@@ -921,8 +936,8 @@ is judged from Alice's own inference, not common knowledge.
     3. a critical next card;
     4. the default tiebreak.
 
-   `rung_high_score_lead_in` (`reactor0/decision.cpp:1781-1801`) is logged as
-   `1b.high_score_lead_in` in `choose_clue` (`:3041-3042`). Outside the variant
+   `rung_high_score_lead_in` (`reactor0/decision.cpp:1814-1834`) is logged as
+   `1b.high_score_lead_in` in `choose_clue` (`:3085-3086`). Outside the variant
    `lead_in_cards` is 0, so the rung is inert. Labelled **1b** for the reason 2b is.
    Self-play Dark Null 9000007 T48: 3 to sim-bob reveals his b3 and his r3, the r3
    leading into his own r4 and r5, so it ranks over a Blue revealing the b3 alone.
@@ -984,7 +999,7 @@ is judged from Alice's own inference, not common knowledge.
 2c. **Alice has a clue that unlocks Bob** (v20.19.0, the user's ruling): Bob is
    LOCKED, and after the clue he has a play or a discard to make — the clues H5
    lifts to HIGH (`ClueCandidate::unlocks_bob`, set in `analyse_clues` at
-   `reactor0/decision.cpp:1379-1382`; `rung_unlock_bob`, `:2188-2207`). Tiebreak:
+   `reactor0/decision.cpp:1412-1415`; `rung_unlock_bob`, `:2221-2240`). Tiebreak:
    the default, except that when the best unlock is a stable play clue to Bob,
    the stable play hierarchy (3.1's) settles among the unlocking stable plays
    (v22.2.0, the user's ruling). The same safe action with more information
@@ -992,7 +1007,7 @@ is judged from Alice's own inference, not common knowledge.
    is the default tiebreak, so nothing changes there. Replay 2019562 T31: a 4
    re-touching will-bot67's o5 calls exactly the b4, as Blue does, and Blue also
    names his b5. Logged as `2c.unlock_bob`, in both `choose_clue` and
-   Precedence step 1 (`:2813`, `:3046`).
+   Precedence step 1 (`:2857`, `:3090`).
 
    It sits ahead of §3, whose chop rescue presumes Bob is not locked, so the two
    never compete for the same Bob. Like H5 it does not apply while Alice is
@@ -1000,13 +1015,25 @@ is judged from Alice's own inference, not common knowledge.
    Labelled **2c** for the reason 2b is. Replay 2019562 T31 is the motivating
    case (see H5).
 
+2d. **Alice can save Cathy's critical chop while Bob is loaded** (Throw It in a Hole
+   only, v23.32.0, the user's ruling and placement; H7 above,
+   [tiiah/CONVENTION.md §2v](../tiiah/CONVENTION.md)). Take the best such clue by the
+   default tiebreak (`rung_save_cathy_chop`, `reactor0/decision.cpp:2242-2251`, given
+   at `:3091-3092`).
+   - It sits after 2c and ahead of §3. A loaded Bob's own chop is not at risk this
+     round, while Cathy, with no safe action, throws hers next.
+   - With Bob loaded, a clue to Cathy is stable (role inversion), so the reactive
+     rungs above offer only reverse reactives. In those Cathy reacts, and does not
+     discard that turn.
+   - Labelled **2d** for the reason 2b is.
+
 3. **Bob's chop is worth a clue or high clue count**. At least one of the following is true:
    
    - Bob is not locked, his chop is worth a clue (defined below), and he has no safe play or discard.
    - The team has 6 or more clues available.
 
    **The clue-count arm opens 3.1 only** (v20.22.0, the user's amendment and
-   ruling; `kPriority3ClueCount`, `rung_3`, `reactor0/decision.cpp:2213-2228`).
+   ruling; `kPriority3ClueCount`, `rung_3`, `reactor0/decision.cpp:2257-2272`).
    With 6 or more tokens a stable play clue to Bob is worth giving whatever his
    chop. The locks, double discards and discard calls of 3.2-3.10 still need the
    first arm, a stuck Bob: opened to every Bob, a lock outranked §4's fill-in at 8
@@ -1025,8 +1052,8 @@ is judged from Alice's own inference, not common knowledge.
    same-hand dupe, not inverted) that plays once Alice's known plays land. Bob is
    expected to deal with it rather than throw his own chop, so Alice plays;
    `rung_3` returns nothing and `priority_3_applies` is false
-   (`bob_handles_cathys_playable_chop`, `reactor0/decision.cpp:2084-2123`, asked at
-   `:2160` and `:2224`). The safe-action condition is what makes Cathy's chop Bob's
+   (`bob_handles_cathys_playable_chop`, `reactor0/decision.cpp:2117-2156`, asked at
+   `:2193` and `:2268`). The safe-action condition is what makes Cathy's chop Bob's
    business at all: a Cathy who will not throw it leaves Bob nothing to do for her,
    and he throws his own (self-play Dark Null seed 96, which lost a 30/30 without
    it). Human
@@ -1119,7 +1146,7 @@ is judged from Alice's own inference, not common knowledge.
        9000004 T11, a Red that called an r5 as the r2). tiiah/CONVENTION.md §2q.
        And it drops a reactive that would have the reacter or the receiver
        misname its own card, at any pace (`misnames_a_card`,
-       `reactor0/decision.cpp:1520`, v23.17.0; self-play 9000080 T44).
+       `reactor0/decision.cpp:1553`, v23.17.0; self-play 9000080 T44).
        tiiah/CONVENTION.md §1d. And a stable 1 play clue whose called card is
        not the one identity a stable 1 may name (`illegal_stable_one`, same
        line, v23.18.0). tiiah/CONVENTION.md §1b.
@@ -1189,7 +1216,7 @@ is judged from Alice's own inference, not common knowledge.
        **In Throw It in a Hole, 3.7 also needs Bob's chop to be critical, playable
        or one away from playable** (v20.2.0, the user's ruling;
        `chop_worth_a_lock`, `state_eval.cpp:167-179`, read at
-       `decision.cpp:2305-2318`). The variant is hard enough that committing Bob's
+       `decision.cpp:2349-2362`). The variant is hard enough that committing Bob's
        whole hand is not worth it for anything further away, so Alice does
        something else, most often her own standing play. 3.6b goes with it, since
        it only ever replaces this lock; 3.6 and 3.10 need a critical chop anyway,
@@ -1264,7 +1291,7 @@ is judged from Alice's own inference, not common knowledge.
    a called y1 at 8 tokens, gave Blue on black's already-clued b3, a clue that
    saved nothing while black's chop was a same-hand dupe; it now plays the y1.
    §1-§3 are untouched, so a clue they find is still given at 8 tokens
-   (`decision.cpp:2528-2539`). `priority_4_applies`
+   (`decision.cpp:2572-2583`). `priority_4_applies`
    (`reactor0/decision.h`, `decision.cpp`), exported so each alternative can be
    asserted apart from the rung's ordering, the way `priority_3_applies` is.
    4a. Alice does not have a known playable card.
@@ -1316,10 +1343,10 @@ is judged from Alice's own inference, not common knowledge.
        **good-card product** is smallest wins: the product of Bob's candidate
        counts, after the clue and from his own view, over every card of his that
        Alice sees is not basic trash (`ClueCandidate::bob_good_product`, filled in
-       `analyse_clues` for every clue stable to Bob, `reactor0/decision.cpp:1455-1466`).
+       `analyse_clues` for every clue stable to Bob, `reactor0/decision.cpp:1488-1499`).
        Ties keep the old order: 4.2, then 4.3, then 4.4 (by its own key), then 4.5,
        then 4.2's candidates behind a safe discard, then the default tiebreak
-       (`rung_4`, `:2562-2622`). It logs `reactor0.rung_4_pool`, and every §4
+       (`rung_4`, `:2606-2666`). It logs `reactor0.rung_4_pool`, and every §4
        return now logs its sub-rung as `reactor0.rung_4` (`sub`).
 
        Replay [2026350](https://hanab.live/shared-replay/2026350) T52 (TIIAH &

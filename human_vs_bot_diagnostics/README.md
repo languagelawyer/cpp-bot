@@ -51,6 +51,7 @@ elsewhere.
 | [9000016 (v23.29)](9000016_23_29.md) | Throw It in a Hole & Black (6 Suits), tiiah (self-play) | — | T2 (no clue that gets a second copy of a called card played) | fixed (v23.29.0) |
 | [2026832](2026832.md) | Throw It in a Hole & Dark Prism (6 Suits), tiiah | yagami_black | T7–T11 (a play call replaces a discard call, at the receiver too) | fixed (v23.30.0) |
 | [2026856](2026856.md) | Throw It in a Hole & Dark Prism (6 Suits), tiiah | yagami_black | T47 (a play known by touch comes before a LOW clue) | fixed (v23.31.0) |
+| [2026882](2026882.md) | Throw It in a Hole & Dark Prism (6 Suits), tiiah | yagami_black | T25 (save Cathy's critical chop while Bob is loaded) | fixed (v23.32.0) |
 
 ## Template
 

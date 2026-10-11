@@ -276,6 +276,12 @@ struct ClueCandidate {
   // and Cathy's chop is not critical and is either not playable or duplicated. Exempts the candidate from the tier gate in `clue_is_admissible`,
   // so an OCCUPIED Alice can still reach rung 3 with it.
   bool saves_stuck_bob_chop = false;
+  // Throw It in a Hole only: does this clue SAVE Cathy's critical chop while Bob is
+  // loaded (tiiah/CONVENTION.md §2v, v23.32.0)? Bob holds a standing play, so a clue
+  // to Cathy is stable; Cathy has no safe action and no standing play; her chop is
+  // critical and not playable; the clue goes to her, is read as stable, touches it,
+  // and does not call it to discard. Lifts the clue to HIGH, and rung 2d gives it.
+  bool saves_cathys_critical_chop = false;
   // Throw It in a Hole only: for a REACTIVE_PLAY, how many identities the
   // RECEIVER will read its called card as, as the giver predicts it (0 when not
   // computed). Priority 1's first tiebreak there: of two reactives calling the
