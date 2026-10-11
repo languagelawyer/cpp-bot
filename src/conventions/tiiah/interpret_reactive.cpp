@@ -264,6 +264,42 @@ bool both_know_their_own(const Game& game, int react_order, int target_order,
   return true;
 }
 
+// THE TEAM'S ACCOUNT OF A CARD'S CANDIDATES (v23.37.0, the user's ruling; replay
+// 2027811 T39). `set`, the candidates of card `order`, less every identity whose copies
+// the whole team can account for elsewhere: thrown on the wire, or held as a card the
+// team's reading names exactly. Read from the action list and `common` alone, so every
+// seat strikes the same ones; `set` itself when nothing would be left. Common
+// elimination counts only a card whose `possible` is one identity, so yagami's CALLED
+// y5 (`{y2,y4,y5}`, read `{y5}`) stayed among will-bot67's candidates, and the bucket
+// rule took it for a card the receiver could misname.
+IdentitySet less_named_elsewhere(const Game& game, int order, const IdentitySet& set) {
+  const State& s = game.state;
+  std::vector<int> named(s.card_count.size(), 0);
+  auto count = [&](Identity id) {
+    if (s.variant->suits[id.suit_index].suit_type.inverted) return;  // a chuck may land
+    const int ord = id.to_ord();
+    if (ord >= 0 && ord < static_cast<int>(named.size())) ++named[ord];
+  };
+  for (const auto& turn : s.action_list) {
+    for (const Action& a : turn) {
+      const auto* d = std::get_if<DiscardAction>(&a);
+      if (d && d->suit_index >= 0 && d->rank >= 1) count(Identity{d->suit_index, d->rank});
+    }
+  }
+  for (const auto& hand : s.hands) {
+    for (int o : hand) {
+      if (o == order || o >= static_cast<int>(game.common.thoughts.size())) continue;
+      const IdentitySet reading = game.common.thoughts[o].possibilities();
+      if (reading.length() == 1) count(reading.head());
+    }
+  }
+  const IdentitySet kept = set.filter([&](Identity id) {
+    const int ord = id.to_ord();
+    return ord >= static_cast<int>(named.size()) || named[ord] < s.card_count[ord];
+  });
+  return kept.non_empty() ? kept : set;
+}
+
 // THE BUCKET RULE AS A LEGALITY LAYER (§1d, v22.4.0, the user's ruling). Would the
 // receiver, having watched the reacter play `react`, still name its target? It reads
 // the bucket the relation names from that card; when the bucket offers a playable
@@ -864,7 +900,8 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
     // illegal reactive and is no world. Replay 2022760 T22: where green was on 2 the
     // g3 played directly, but o17 could only answer as the m1, and the receiver would
     // have read the r3. At pace <= 1 a pairing may break the relation (v18.4.0).
-    const IdentitySet target_poss = game.common.thoughts[target.order].possibilities();
+    const IdentitySet target_poss = less_named_elsewhere(
+        game, target.order, game.common.thoughts[target.order].possibilities());
     const State recv_after_t = recv_frame(after, target.order);
     auto works = [&](const OpenWorld& w, Identity i) {
       const std::size_t k = index_of(w);
@@ -1009,7 +1046,8 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
       return !reacter_can_legally_answer(
           recv_faced, action.clue.kind, clue_turn, target.id,
           react_live.filter([&faced](Identity i) { return faced.is_playable(i); }),
-          game.common.thoughts[target.order].possibilities());
+          less_named_elsewhere(game, target.order,
+                               game.common.thoughts[target.order].possibilities()));
     };
     // ...unless both players can name the card they will play, on both frames
     // (v23.14.0, the user's ruling; `both_know_their_own`): then the pairing is legal
@@ -1079,7 +1117,8 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
         // yellow, the two buckets it names, are complete.
         // The reacter's empathy as the reacter sees it, our named cards out of it
         // (v23.25.0, `seen_by_holder`).
-        const IdentitySet target_poss = game.common.thoughts[target.order].possibilities();
+        const IdentitySet target_poss = less_named_elsewhere(
+            game, target.order, game.common.thoughts[target.order].possibilities());
         const IdentitySet react_sees = seen_by_holder(game, reacter, react_live);
         const bool late_break =
             high_score_phase(state, clue_turn) &&
@@ -1099,8 +1138,9 @@ std::optional<ClueInterp> interpret_reactive(const Game& prev, Game& game,
       // alone, like the test above: a reject, never a retarget.
       if (action.giver == state.our_player_index && connector && !double_chuck) {
         const Thought& tt = game.common.thoughts[target.order];
-        const IdentitySet could =
-            tt.inferred.non_empty() ? tt.inferred.intersect(tt.possible) : tt.possible;
+        const IdentitySet could = less_named_elsewhere(
+            game, target.order,
+            tt.inferred.non_empty() ? tt.inferred.intersect(tt.possible) : tt.possible);
         if (!finesse_from_the_card(game, action.clue.kind, clue_turn, could,
                                    IdentitySet::single(*connector), react_order)) {
           return std::nullopt;
@@ -1640,7 +1680,8 @@ bool proven_finesse(const Game& prev, const Game& game, const ReactorWC& wc,
   }
   const IdentitySet& before = prev.common.thoughts[target].inferred;
   const IdentitySet& possible = game.common.thoughts[target].possible;
-  const IdentitySet could = before.non_empty() ? before.intersect(possible) : possible;
+  const IdentitySet could = less_named_elsewhere(
+      game, target, before.non_empty() ? before.intersect(possible) : possible);
   return finesse_from_the_card(game, wc.clue.kind, wc.turn, could,
                                IdentitySet::single(seen), react_order);
 }
@@ -1762,7 +1803,8 @@ void receiver_world_fallback(const Game& prev, Game& game, const ReactorWC& wc,
 
   const IdentitySet& before = prev.common.thoughts[target].inferred;
   const IdentitySet& possible = game.common.thoughts[target].possible;
-  const IdentitySet could = before.non_empty() ? before.intersect(possible) : possible;
+  const IdentitySet could = less_named_elsewhere(
+      game, target, before.non_empty() ? before.intersect(possible) : possible);
   if (could.is_empty()) return;
 
   // ASCR (§1e): the bucket rule first -- §1d's bucket half, or its finesse half when provable --
@@ -1952,8 +1994,8 @@ void narrow_receiver_call(const Game& prev, Game& game, const ReactorWC& wc,
   const IdentitySet& before = prev.common.thoughts[target].inferred;
   {  // the bucket first (v22.0.0, `keep_convention_half`)
     const IdentitySet& possible = game.common.thoughts[target].possible;
-    const IdentitySet could =
-        before.non_empty() ? before.intersect(possible) : possible;
+    const IdentitySet could = less_named_elsewhere(
+        game, target, before.non_empty() ? before.intersect(possible) : possible);
     keep_convention_half(
         rr, finesse_from_the_card(game, wc.clue.kind, wc.turn, could, react_live,
                                   react_order),
@@ -1973,8 +2015,8 @@ void narrow_receiver_call(const Game& prev, Game& game, const ReactorWC& wc,
   // and refused the g5 it was called to play at T23.
   {
     const IdentitySet& possible = game.common.thoughts[target].possible;
-    const IdentitySet could =
-        before.non_empty() ? before.intersect(possible) : possible;
+    const IdentitySet could = less_named_elsewhere(
+        game, target, before.non_empty() ? before.intersect(possible) : possible);
     if (could.intersect(allowed).is_empty()) return;
   }
   // Undo the stamp helper's narrowing before applying ours, in the same spirit as
@@ -2123,8 +2165,8 @@ void annotate_candidate(const Game& game, const Game& hypo,
     const IdentitySet pre = target < static_cast<int>(game.common.thoughts.size())
                                 ? game.common.thoughts[target].inferred
                                 : IdentitySet::empty();
-    const IdentitySet could =
-        pre.intersect(possible).non_empty() ? pre.intersect(possible) : possible;
+    const IdentitySet could = less_named_elsewhere(
+        hypo, target, pre.intersect(possible).non_empty() ? pre.intersect(possible) : possible);
     // Not `could`: the giver ranks a reading the bucket leaves impossible as before,
     // a misread (v23.12.0). Predicting the receiver's any-playable reading there made
     // such pairings rank well while the REACTER, who cannot see its card, still read
@@ -2219,8 +2261,8 @@ std::optional<std::pair<IdentitySet, int>> reaction_team_reading(const Game& gam
   bool finesse = false;
   if (target >= 0 && target < static_cast<int>(game.common.thoughts.size())) {
     const Thought& t = game.common.thoughts[target];
-    const IdentitySet could =
-        t.inferred.non_empty() ? t.inferred.intersect(t.possible) : t.possible;
+    const IdentitySet could = less_named_elsewhere(
+        game, target, t.inferred.non_empty() ? t.inferred.intersect(t.possible) : t.possible);
     finesse = finesse_from_the_card(game, wc->clue.kind, wc->turn, could,
                                     IdentitySet::single(id), order);
   }
