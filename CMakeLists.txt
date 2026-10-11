@@ -486,6 +486,7 @@ add_executable(hanabi_decision_tests
   tests/test_reactor0/test_decision_making/test_replay_1943094_pace_zero_still_plays.cpp
   tests/test_reactor0/test_decision_making/test_replay_1973281_rung38_needs_a_critical_chop.cpp
   tests/test_reactor0/test_decision_making/test_pace_clue_gate.cpp
+  tests/test_reactor0/test_decision_making/test_known_play_occupies.cpp
   tests/test_reactor0/test_decision_making/test_low_pace_clues.cpp
   tests/test_reactor0/test_decision_making/test_section_four_gate.cpp
   tests/test_reactor0/test_decision_making/test_replay_1978799_pace_one_reaches_section_four.cpp
@@ -620,6 +621,7 @@ add_executable(hanabi_tiiah_tests
   tests/test_tiiah/test_replay_2026697_retouch_two_names_the_gray_two.cpp
   tests/test_tiiah/test_replay_2026727_target_walked_after_receivers_known_plays.cpp
   tests/test_tiiah/test_replay_2026832_play_call_replaces_discard_call.cpp
+  tests/test_tiiah/test_replay_2026856_known_play_over_low_clue.cpp
   tests/test_tiiah/test_self_colour_bluff.cpp
   tests/test_tiiah/test_known_bucket_violation.cpp
   tests/test_tiiah/test_replay_2019598_named_card_refutes_finesse_world.cpp

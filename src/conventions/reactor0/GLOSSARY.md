@@ -232,8 +232,9 @@ Reactor0's replacement for reactor's low-clue-count gate, and the reason a
 clue has to earn its token. Two windows, with **different pace thresholds**:
 
 * Alice already holds a card stamped `CALLED_TO_PLAY` (or, in a variant with
-  an inverted suit, `CALLED_TO_DISCARD`) — she has something to do either way,
-  so the bar is **at least HIGH** while `pace() >= 1 && clue_tokens < 8`;
+  an inverted suit, `CALLED_TO_DISCARD`), or since v23.31.0 a play she knows by
+  touch — she has something to do either way, so the bar is **at least HIGH**
+  while `pace() >= 1 && clue_tokens < 8`;
 * otherwise the bar is **at least MEDIUM**, while `pace() >= 3 &&
   clue_tokens <= 3`.
 
@@ -244,8 +245,10 @@ sees it. The `< 8` bound is the forced-clue exemption: at 8 tokens discarding
 is illegal, and rejecting every clue there would just hand the choice to an
 arbitrary tie-break; an unoccupied Alice who is LOCKED is exempt for the same
 reason. The MEDIUM window is one token wider than reactor's and, unlike
-reactor's, fires even when Alice holds no play — the gate keys on the *stamp*,
-not on what she knows.
+reactor's, fires even when Alice holds no play. Until v23.31.0 the HIGH bar keyed
+on the *stamp* alone. Since then a play she knows by touch counts too: a card no
+clue stamped, every reading of which plays on her own view (`obvious_playables`;
+the user's ruling, human diagnostic 2026856 T47).
 
 **Why the pace thresholds differ.** An occupied Alice has her call to fall back
 on at any pace, so a LOW clue is never the better use of the turn — which is why
@@ -693,7 +696,7 @@ A clue after which a LOCKED Bob is no longer locked: it gives him a play or a
 discard to make. HIGH by H5, and given ahead of §3 by the General Clue
 Evaluation List's priority 2c, but neither while Alice is *occupied*.
 `ClueCandidate::unlocks_bob` (`include/hanabi/conventions/reactor0/decision.h`);
-`src/conventions/reactor0/state_eval.cpp:656-673`. Added in v20.19.0 after
+`src/conventions/reactor0/state_eval.cpp:667-684`. Added in v20.19.0 after
 replay 2019562 T31.
 
 ### good-card product

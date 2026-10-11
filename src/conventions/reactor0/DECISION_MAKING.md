@@ -30,7 +30,7 @@ We will mostly borrow the existing implementations of high/medium/low tier clues
 Note the change to H1 to also require that Cathy's chop be either playable or
 critical.
 
-A clue tier (`clue_tier`, `state_eval.cpp:575-696`) is VERY HIGH iff:
+A clue tier (`clue_tier`, `state_eval.cpp:586-707`) is VERY HIGH iff:
 
 1. **VH1** — Cathy's chop is not trash or a same-hand-dupe, and the clue **gets a
    finesse**. A finesse is reactive Phase B, which belongs to the **even-parity
@@ -225,7 +225,7 @@ only, v23.29.0, the user's ruling; [tiiah/CONVENTION.md §2u](../tiiah/CONVENTIO
 NOT-LOW iff any of VH1, H2, H3, H4, H5, H6, or:
 
 6. **N5 — Bob's chop is playable** and is not duplicated in his own hand
-   (`has_playable_chop`, `:213-225`; applied at `:674`). Like H1 this is a
+   (`has_playable_chop`, `:213-225`; applied at `:691`). Like H1 this is a
    property of the **position, not of the candidate clue**, so it lifts every
    clue that turn to at least MEDIUM. Deliberately weaker than `at_risk_chop`: it
    asks only "playable, and Bob cannot just pitch a spare copy", and does *not*
@@ -239,10 +239,10 @@ NOT-LOW iff any of VH1, H2, H3, H4, H5, H6, or:
 
 …or, when **Cathy's** chop is endangered (`:676-688`):
 
-7. **N3** — the clue gets two new plays. `:678`.
+7. **N3** — the clue gets two new plays. `:695`.
 8. **N2** — the clue is **reactive** and Bob has no stable color play clue he
    could give Cathy. Reactive is a single integer compare, `action.target != bob`,
-   since dispatch is positional (§1a, `interpret_clue.cpp:1136-1139`). `:684-687`.
+   since dispatch is positional (§1a, `interpret_clue.cpp:1136-1139`). `state_eval.cpp:701-704`.
    In a **target-parity** variant the second arm is vacuously true (no stable
    clues exist) while the first still asks who was clued, so only a clue to
    Cathy reaches N2 there.
@@ -759,6 +759,19 @@ still action** (`call_is_actionable`, v13.3.0). This knowledge need
 not be global: it is Alice's own inference that counts. Note *occupied* is not the
 same as *loaded*.
 
+**...or a play she knows by touch (v23.31.0, the user's ruling).** A card no clue
+stamped, every reading of which plays on her own view (`Player::obvious_playables`),
+occupies her too. It is as good a fallback as a call, and the play phase will make it.
+- A called card stays the stamped loop's, with its actionable test.
+- Until v23.31.0 the stamp was read literally (v2.2.0's design), so a touch-known play
+  left Alice unoccupied. Below pace 3 rule 2a then let any clue through, LOW included.
+- Human diagnostic 2026856 T47 (`human_vs_bot_diagnostics/2026856.md`): will-bot67
+  held its clued `{y4}` with yellow on 3, at pace 2 and 2 tokens. It gave a LOW
+  reactive 2 that got only yagami's r4, where it should have played.
+- `tests/test_reactor0/test_decision_making/test_known_play_occupies.cpp`, and
+  `test_pace_clue_gate.cpp`'s `ObviousPlayableWithoutStampRequiresHigh`, which until
+  v23.31.0 asserted the opposite.
+
 **What counts as a known play in Throw It in a Hole (v20.9.0).** The per-card test
 behind *loaded*, *locked*, §4's 4a and the play phase is `Player::order_playable`
 (`src/basics/player_game.cpp:162-208`). In a hole variant it also counts a call on
@@ -784,8 +797,8 @@ card. Replay 1981703 T19: a dupe killed yagami_green's called card, its own
 sight dropped the call, the stamp survived, and the gate flattened every
 candidate at pace 1 — leaving phase 2 to blind-pitch into a game-ending strike.
 
-Concretely, `requires_high_tier` (`state_eval.cpp:340-373`) reads the stamp
-literally and counts a `CALLED_TO_DISCARD` **only in a variant that contains an
+Concretely, `requires_high_tier` (`state_eval.cpp:340-384`) reads the stamp
+literally, then the touch-known plays (`:372-382`), and counts a `CALLED_TO_DISCARD` **only in a variant that contains an
 inverted suit** — there, pressing Discard is how an inverted card is played, so
 the call is a deferred play. In a plain variant a reacter-CTD does not occupy
 Alice at all.

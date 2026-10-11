@@ -369,6 +369,17 @@ bool requires_high_tier(const Game& game) {
     // section 4 never got a pool, and phase 2 blind-pitched a br5 into a strike.
     if (call_is_actionable(game, alice, o)) return true;
   }
+  // ...OR A PLAY SHE KNOWS BY TOUCH (v23.31.0, the user's ruling): a card no clue
+  // stamped, every reading of which plays on her own view. It is as good a fallback
+  // as a call, which is what "occupied" means, and the play phase will make it. A
+  // called card is the loop above's, with its actionable test. Human diagnostic
+  // 2026856 T47 (human_vs_bot_diagnostics/2026856.md): will-bot67 held its clued
+  // `{y4}`, yellow on 3, but counted as unoccupied; at pace 2 the MEDIUM bar stood
+  // down, and it gave a LOW reactive that got only yagami's r4.
+  for (int o : game.players[alice].obvious_playables(game, alice)) {
+    const CardStatus st = game.meta[o].status;
+    if (st != CardStatus::CALLED_TO_PLAY && st != CardStatus::CALLED_TO_DISCARD) return true;
+  }
   return false;
 }
 

@@ -2304,7 +2304,7 @@ const ClueCandidate* rung_3(const Game& g, const std::vector<ClueCandidate>& cs)
     // unguarded call asks whether Bob could colour-clue *Alice*, which is a
     // real but entirely different question and would veto the lock on the
     // strength of it. This is H1c's `!has_cathy ||` idiom
-    // (`state_eval.cpp:552-553`).
+    // (`state_eval.cpp:563-564`).
     const bool bob_can_handle_cathy =
         has_cathy(g) && has_colour_play_clue_for(g, bob_of(g), cathy_of(g));
     // Throw It in a Hole: no lock over a chop worse than one away (v20.2.0, the

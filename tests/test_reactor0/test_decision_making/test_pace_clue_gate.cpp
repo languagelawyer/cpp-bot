@@ -6,7 +6,8 @@
 //           is occupied
 //   required tier: HIGH when Alice holds a card stamped CALLED_TO_PLAY, or —
 //                  in a variant containing an inverted suit — a card stamped
-//                  CALLED_TO_DISCARD. Otherwise NOT-LOW (HIGH or MEDIUM).
+//                  CALLED_TO_DISCARD, or a play she knows by touch (v23.31.0).
+//                  Otherwise NOT-LOW (HIGH or MEDIUM).
 //
 // Unlike reactor's low-clue-count gate this window is one token wider
 // (`<= 3`, not `< 3`) and has NO "we hold a real play" conjunct, so it also
@@ -282,11 +283,12 @@ TEST(Reactor0PaceClueGate, ReactorGateStillStopsShortOfThreeTokens) {
 
 // --- which tier is required ----------------------------------------------
 
-// Decision #3, the "no" half: an empathy-known playable that carries NO
-// convention stamp must NOT raise the bar to HIGH. This is the assertion most
-// likely to catch an implementation that reaches for `obvious_playables`
-// (which is what reactor's gate keys on).
-TEST(Reactor0PaceClueGate, ObviousPlayableWithoutStampDoesNotRequireHigh) {
+// An empathy-known playable that carries NO convention stamp raises the bar to
+// HIGH too (v23.31.0, the user's ruling): it is a play Alice can make, which is
+// what "occupied" means. Until v23.31.0 it did not ("Decision #3", v2.2.0: the
+// stamp was read literally), and at pace 2 an unoccupied Alice holding a known y4
+// gave a LOW reactive instead of playing (human diagnostic 2026856 T47).
+TEST(Reactor0PaceClueGate, ObviousPlayableWithoutStampRequiresHigh) {
   SetupOptions opts = inert_position();
   opts.hands[2] = {"r3", "y3", "g3", "b3", "p3"};  // Cathy chop r3, endangered
   opts.clue_tokens = 3;
@@ -298,8 +300,8 @@ TEST(Reactor0PaceClueGate, ObviousPlayableWithoutStampDoesNotRequireHigh) {
       << "guard: Alice holds a known playable y1 carrying no stamp";
   ASSERT_EQ(g.meta[order_at(g, TestPlayer::ALICE, 1)].status, CardStatus::NONE)
       << "guard: that playable must be unstamped";
-  ASSERT_FALSE(hanabi::reactor0::requires_high_tier(g))
-      << "an unstamped playable must not force the HIGH tier";
+  ASSERT_TRUE(hanabi::reactor0::requires_high_tier(g))
+      << "an unstamped playable forces the HIGH tier";
 }
 
 // The "yes" half: a literal CALLED_TO_PLAY stamp does force HIGH, and a
