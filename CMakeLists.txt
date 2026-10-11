@@ -342,6 +342,7 @@ add_executable(hanabi_reactor0_tests
   tests/test_reactor0/test_stable_colour.cpp
   tests/test_reactor0/test_stable_colour_baseline.cpp
   tests/test_reactor0/test_stable_colour_new_touch_focus.cpp
+  tests/test_reactor0/test_stable_colour_replaces_discard_call.cpp
   tests/test_reactor0/test_stable_rank.cpp
   tests/test_reactor0/test_stable_chuck_drops_criticals.cpp
   tests/test_reactor0/test_odds_and_evens.cpp
@@ -618,6 +619,7 @@ add_executable(hanabi_tiiah_tests
   tests/test_tiiah/test_retouch_rank_call.cpp
   tests/test_tiiah/test_replay_2026697_retouch_two_names_the_gray_two.cpp
   tests/test_tiiah/test_replay_2026727_target_walked_after_receivers_known_plays.cpp
+  tests/test_tiiah/test_replay_2026832_play_call_replaces_discard_call.cpp
   tests/test_tiiah/test_self_colour_bluff.cpp
   tests/test_tiiah/test_known_bucket_violation.cpp
   tests/test_tiiah/test_replay_2019598_named_card_refutes_finesse_world.cpp

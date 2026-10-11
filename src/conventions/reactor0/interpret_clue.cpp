@@ -585,10 +585,10 @@ std::optional<ClueInterp> stable_colour(const Game& prev, Game& game,
   const std::vector<int> focus_pool = colour_focus_pool(prev, action);
   auto target = leftmost_could_be_playable(game, action, focus_pool);
   if (target) {
-    // Guards shared with reactor's ref_play
-    // (src/conventions/reactor/interpret_clue.cpp:291-311): don't stack a
-    // play promise on a blind-playing card, and a CTD'd card is only a valid
-    // play target if it is visibly playable.
+    // A guard shared with reactor's ref_play
+    // (src/conventions/reactor/interpret_clue.cpp:291-311): don't stack a play
+    // promise on a blind-playing card. Its other guard, a CTD'd card a play target
+    // only if visibly playable, is not reactor0's (v23.30.0): see below.
     //
     // There is no longer an inverted-target reject here. It used to read
     // `state.deck[*target].id()`, which is POV-ASYMMETRIC — nullopt for the
@@ -625,11 +625,13 @@ std::optional<ClueInterp> stable_colour(const Game& prev, Game& game,
       if (action.giver == state.our_player_index) return std::nullopt;
       return stall_or_fix();
     }
-    auto target_id = game.state.deck[*target].id();
-    if (game.meta[*target].status == CardStatus::CALLED_TO_DISCARD &&
-        !(target_id && game.state.is_playable(*target_id))) {
-      return std::nullopt;
-    }
+    // A card called to DISCARD is called to play like any other, and the play call
+    // replaces the discard call (v23.30.0, the user's ruling). Until then a CTD'd
+    // target had to be visibly playable: a test of the deck, which the receiver
+    // cannot make on its own card, so it alone kept the CTD. Replay 2026832 T7-T11:
+    // yagami's Yellow called will-bot69's o8, the y3, which a 5 had called to
+    // discard; every other seat read the play, and will-bot69 chucked it. The giver
+    // still never calls a card it can see is dead (`target_play`'s consistency test).
     auto interp = hanabi::reactor::target_play(game, action, *target,
                                               /*urgent=*/false, /*stable=*/true);
     // Build the call's inference to match the button it stamped.

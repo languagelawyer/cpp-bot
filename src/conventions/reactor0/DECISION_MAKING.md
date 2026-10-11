@@ -242,7 +242,7 @@ NOT-LOW iff any of VH1, H2, H3, H4, H5, H6, or:
 7. **N3** — the clue gets two new plays. `:678`.
 8. **N2** — the clue is **reactive** and Bob has no stable color play clue he
    could give Cathy. Reactive is a single integer compare, `action.target != bob`,
-   since dispatch is positional (§1a, `interpret_clue.cpp:1134-1137`). `:684-687`.
+   since dispatch is positional (§1a, `interpret_clue.cpp:1136-1139`). `:684-687`.
    In a **target-parity** variant the second arm is vacuously true (no stable
    clues exist) while the first still asks who was clued, so only a clue to
    Cathy reaches N2 there.
@@ -1878,7 +1878,7 @@ button the receiver was promised.
 
 | Rule | Existing machinery | Where |
 |---|---|---|
-| reactive vs stable | `clue_is_reactive` — positional (`action.target != bob`) plus the target-parity overrides | `interpret_reactive.cpp:1028`, dispatched at `interpret_clue.cpp:1134-1137` |
+| reactive vs stable | `clue_is_reactive` — positional (`action.target != bob`) plus the target-parity overrides | `interpret_reactive.cpp:1028`, dispatched at `interpret_clue.cpp:1136-1139` |
 | two new plays (H3, N3) | `new_play_facts(...).count >= 2` | `state_eval.cpp:229-281` |
 | finesse (VH1) | reactive rank Phase B | `interpret_reactive.cpp:486-576` |
 | double discard clue | reactive rank Phase C | `interpret_reactive.cpp:578-648` |

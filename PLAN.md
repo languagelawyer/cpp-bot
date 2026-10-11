@@ -176,7 +176,7 @@ The implementation should invent none of these:
 
 | Need | Existing | Where |
 |---|---|---|
-| reactive vs stable | positional compare `action.target != bob` | `reactor0/interpret_clue.cpp:655-666` |
+| reactive vs stable | positional compare `action.target != bob` | `reactor0/interpret_clue.cpp:657-668` |
 | two new plays | `new_play_facts(...).count >= 2` | `reactor0/state_eval.cpp:184-201` |
 | finesse (H4) | rank Phase B | `reactor0/interpret_reactive.cpp:384-448` |
 | double discard | rank Phase C | `reactor0/interpret_reactive.cpp:449-483` |

@@ -49,6 +49,7 @@ elsewhere.
 | [9000081 (v23.22)](9000081_23_22.md) | Throw It in a Hole & Dark Null (6 Suits), tiiah (self-play) | — | T51 (1 to sim-bob, both know their cards; at least Blue, a lead-in) | the 1 fixed (v23.23.0, pinned v23.25.0); Blue a HIGH lead-in (v23.26.0) |
 | [9000096 (v23.22)](9000096_23_22.md) | Throw It in a Hole & Dark Null (6 Suits), tiiah (self-play) | — | T59 (forced endgame: discard so the seat after next gets two turns) | fixed (v23.27.0) |
 | [9000016 (v23.29)](9000016_23_29.md) | Throw It in a Hole & Black (6 Suits), tiiah (self-play) | — | T2 (no clue that gets a second copy of a called card played) | fixed (v23.29.0) |
+| [2026832](2026832.md) | Throw It in a Hole & Dark Prism (6 Suits), tiiah | yagami_black | T7–T11 (a play call replaces a discard call, at the receiver too) | fixed (v23.30.0) |
 
 ## Template
 

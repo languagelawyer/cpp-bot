@@ -420,7 +420,7 @@ clue). This reading takes priority over the orange ladder.
 ### positional dispatch
 Reactor0's whole dispatcher: clue to Bob ⇒ stable, clue to anyone else ⇒
 reactive with Bob as reacter — regardless of loadedness, stall context, or
-pending reactives. `interpret_clue.cpp:618-654`.
+pending reactives. `interpret_clue.cpp:618-656`.
 
 ### reactive clue
 As in reactor, a clue decoded jointly with the reacter's next action — but
@@ -664,7 +664,7 @@ card is marked known trash and nothing else happens — it is **terminal**,
 never a referential discard, and (unlike the aspirational reactor
 trash-push entry in TODO.md) never a play. Priority 2 of the stable rank
 ladder; priority 3 extends it to previously-clued cards revealed as trash.
-`interpret_clue.cpp:1097-1110`.
+`interpret_clue.cpp:1099-1112`.
 
 As a clue SHAPE (`ClueShape::TRASH_REVEAL`, what DECISION_MAKING.md 3.3 / 4.2
 select), it is wider: any stable clue after which a card in Bob's hand is known
