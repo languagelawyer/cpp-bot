@@ -2312,6 +2312,28 @@ const ClueCandidate* rung_3(const Game& g, const std::vector<ClueCandidate>& cs)
   }
   // 3.5 -- a stable discard to Bob on a card Alice can see a copy of elsewhere.
   if (auto* c = first_of(g, pool_stable_ditch_dupe(g, cs))) return c;
+  // 3.5b -- Throw It in a Hole: Bob's chop is CRITICAL and PLAYABLE. A stable play
+  // clue that calls the chop itself saves it and plays it, at any clue count, so it
+  // comes before 3.6-3.10's locks and ditches, which only keep it (the user's
+  // ruling). 3.6b's play stands down for a critical chop, since those rungs save it
+  // for good; a play on the chop does that too, and gives Bob his turn. Self-play
+  // Black seed 159 T36 (human_vs_bot_diagnostics/9000159_23_30.md): at 1 clue
+  // sim-cathy locked sim-alice with a 5 over her chop, the k1, where Black plays it.
+  if (g.state.variant->throw_it_in_a_hole && chop_is_critical(g, bob_of(g))) {
+    const auto chop = g.chop(bob_of(g));
+    const auto id = chop ? g.state.deck[*chop].id() : std::nullopt;
+    if (id && g.state.is_playable(*id)) {
+      Pool on_chop;
+      for (const ClueCandidate* c : pool_stable_play(g, cs)) {
+        if (c->reading.stable_subject == *chop) on_chop.push_back(c);
+      }
+      if (auto* c = settle_stable_play(g, std::move(on_chop))) {
+        hanabi::logging::log_branch("reactor0.rung_3_5b_play_critical_chop",
+                                    {{"target", c->action.target}, {"chop", *chop}});
+        return c;
+      }
+    }
+  }
   // 3.6 -- all of Bob's cards are critical
   if (clues_at_least(g, 2)) {
     bool all_critical = true;

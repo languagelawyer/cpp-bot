@@ -398,29 +398,45 @@ std::optional<int> locked_hand_throw(const Game& game, int alice) {
     }
     return std::max(left, 0);
   };
+  // Throw It in a Hole: a card whose other copy Alice can see in a partner's hand
+  // costs nothing to throw, like trash (the user's ruling). Self-play Black seed 159
+  // (human_vs_bot_diagnostics/9000159_23_30.md): locked sim-bob held a known y4 he saw
+  // in sim-cathy's hand and a {y3,p3}, and would throw the {y3,p3} for its share of
+  // trash.
+  auto seen_elsewhere = [&](Identity i) {
+    for (int p = 0; p < s.num_players; ++p) {
+      if (p == alice) continue;
+      for (int o : s.hands[p]) {
+        if (s.deck[o].id() == i) return true;
+      }
+    }
+    return false;
+  };
   std::optional<int> best;
-  double best_crit = 2.0, best_trash = -1.0;
+  double best_crit = 2.0, best_safe = -1.0;
   for (int o : s.hands[alice]) {
     if (chuck_would_strike(game, alice, o)) continue;
     const Thought& t = game.players[alice].thoughts[o];
     IdentitySet set = t.inferred.non_empty() ? t.inferred : t.possible;
     const IdentitySet seen = sight_narrowed(game, o);
     if (set.intersect(seen).non_empty()) set = set.intersect(seen);
-    double total = 0, crit = 0, trash = 0;
+    double total = 0, crit = 0, safe = 0;
     for (Identity i : set) {
       const double w = weight(i);
       total += w;
       if (s.is_basic_trash(i)) {
-        trash += w;
+        safe += w;
       } else if (s.is_critical(i)) {
         crit += w;
+      } else if (s.variant->throw_it_in_a_hole && seen_elsewhere(i)) {
+        safe += w;
       }
     }
     if (total <= 0) continue;
-    const double c = crit / total, tr = trash / total;
-    if (c < best_crit - 1e-9 || (c < best_crit + 1e-9 && tr > best_trash + 1e-9)) {
+    const double c = crit / total, sf = safe / total;
+    if (c < best_crit - 1e-9 || (c < best_crit + 1e-9 && sf > best_safe + 1e-9)) {
       best_crit = c;
-      best_trash = tr;
+      best_safe = sf;
       best = o;
     }
   }

@@ -65,7 +65,7 @@ pairing that u2 with yagami's r5, already called by a reverse reactive.
 reactive finesse whose connector -- the reacter's card, by sight -- is the identity
 of a card already called to play elsewhere (visibly, or on our own hand when our
 reading is that one card): the reacter would spend its play on a duplicate
-(`finesse_dupes_a_call`, `decision.cpp:2786-2816`, asked at `:2823`). Such a clue
+(`finesse_dupes_a_call`, `decision.cpp:2808-2838`, asked at `:2845`). Such a clue
 can still be chosen at its ordinary tier; it just no longer outranks a reaction.
 Replay [2024676](https://hanab.live/shared-replay/2024676#5) T5 (TIIAH & Dark Null):
 will-bot69 owed its called r2 and instead gave a VERY HIGH 4 to yagami, a finesse
@@ -1216,7 +1216,7 @@ is judged from Alice's own inference, not common knowledge.
        **In Throw It in a Hole, 3.7 also needs Bob's chop to be critical, playable
        or one away from playable** (v20.2.0, the user's ruling;
        `chop_worth_a_lock`, `state_eval.cpp:167-179`, read at
-       `decision.cpp:2349-2362`). The variant is hard enough that committing Bob's
+       `decision.cpp:2371-2384`). The variant is hard enough that committing Bob's
        whole hand is not worth it for anything further away, so Alice does
        something else, most often her own standing play. 3.6b goes with it, since
        it only ever replaces this lock; 3.6 and 3.10 need a critical chop anyway,
@@ -1291,7 +1291,7 @@ is judged from Alice's own inference, not common knowledge.
    a called y1 at 8 tokens, gave Blue on black's already-clued b3, a clue that
    saved nothing while black's chop was a same-hand dupe; it now plays the y1.
    §1-§3 are untouched, so a clue they find is still given at 8 tokens
-   (`decision.cpp:2572-2583`). `priority_4_applies`
+   (`decision.cpp:2594-2605`). `priority_4_applies`
    (`reactor0/decision.h`, `decision.cpp`), exported so each alternative can be
    asserted apart from the rung's ordering, the way `priority_3_applies` is.
    4a. Alice does not have a known playable card.
@@ -1393,7 +1393,9 @@ is judged from Alice's own inference, not common knowledge.
    ever the branch for a forced clue when **Bob was not in trouble**.
 
    That is no longer true, and the difference is worth being precise about.
-   Every rung that can end §3 now carries a condition of its own: 3.6 needs
+   Every rung that can end §3 now carries a condition of its own: under Throw It in
+   a Hole 3.5b needs Bob's chop critical and playable, and a stable play clue that
+   calls it (v23.33.0; `decision.cpp:2315-2336`; tiiah CONVENTION.md §2w), 3.6 needs
    Bob's whole hand critical, 3.6b only replaces 3.7's lock with a play (below 3.1's
    clue count, on a chop that is not critical), 3.7 needs three cards close to playing *and* two
    vetoes (and under Throw It in a Hole a chop no worse than one away), and **3.8, 3.9 and 3.10 all need Bob's chop to be critical**. Critical is
@@ -1730,7 +1732,7 @@ list by priority:
 6. Alice pitches a critical 2 (or 4 in a reversed suit)
 7. Alice pitches a critical clue-regain card (5 in a normal suit, 1 in a reversed
    suit) -- **not in Throw It in a Hole** (v23.8.0, the user's ruling;
-   `calls.cpp:524-534`): a 5 into the hole pays no clue back and leads into no
+   `calls.cpp:540-550`): a 5 into the hole pays no clue back and leads into no
    other card, so it is never played ahead of a lower playable, and rung 8 takes
    the lowest rank. Replay [2025193](https://hanab.live/shared-replay/2025193#49)
    T49: will-bot69 played its known b5 here ahead of its called p2. Endgame rule 0
@@ -1773,7 +1775,7 @@ list by priority:
     safety promise), so a hand whose other cards are all clued has no chop at all.
     Such a hand is not locked: Alice **discards the first card drawn during the
     stall** (the lowest `turn_drawn` among the unclued status-`NONE` cards drawn
-    after `zcs_turn`) — `12.discard_stall_drawn` (`reactor0/calls.cpp:614-643`). It
+    after `zcs_turn`) — `12.discard_stall_drawn` (`reactor0/calls.cpp:630-659`). It
     keys on the card having been drawn during the stall, not on the current token
     count, and it is skipped at 8 clues (a discard is illegal) and when the discard
     would certainly strike. Replay 2011327 T32: will-bot67's
@@ -1783,13 +1785,15 @@ list by priority:
 
     **A hand with no such card is really locked, and below 8 tokens it throws the
     card least likely to be critical** (v17.6.0, `12.locked_throw_least_critical`,
-    `reactor0/calls.cpp:644-651`, choosing through `locked_hand_throw`,
-    `:383-428`). Each card's reading, narrowed by sight as the chuck list narrows
+    `reactor0/calls.cpp:660-667`, choosing through `locked_hand_throw`,
+    `:383-444`). Each card's reading, narrowed by sight as the chuck list narrows
     it, is weighed by the copies Alice cannot place. The card thrown has the
-    smallest share of critical identities; ties go to the largest share of trash,
-    then the leftmost. A card whose Discard would certainly strike is never the
-    one. At 8 tokens a discard is illegal and the leftmost card is pitched
-    (`12.locked_no_chop`, `:618`).
+    smallest share of critical identities. Ties go to the largest share of SAFE
+    identities, then the leftmost. A safe identity is trash, or, in Throw It in a
+    Hole (v23.33.0), one whose other copy Alice sees in a partner's hand (`:401-414`, `:431`;
+    tiiah CONVENTION.md §2w). A card whose Discard would certainly strike is never
+    the one. At 8 tokens a discard is illegal and the leftmost card is pitched
+    (`12.locked_no_chop`, `:668`).
 
     Until v17.6.0 the locked hand always pitched its leftmost card. A blind pitch
     that misses throws the card away as surely as a discard does, and strikes on
