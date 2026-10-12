@@ -306,17 +306,19 @@ score is hidden in TIIAH, so it is never the measure. In it the giver may give a
 globally known bucket violation, and a reader whose bucket offers nothing the target
 could be reads any playable, taken per candidate of the reacter's card, rather than
 the finesse first (CONVENTION.md §1d, replay 2026455 T49). And a play clue revealing a
-card that *leads into* the other hands is HIGH (§2s, v23.26.0). `high_score_phase`,
+card that *leads into* the other hands is HIGH (§2s, v23.26.0), as it also is at pace
+≤ 1 (v23.39.0). `high_score_phase`,
 `src/conventions/tiiah/buckets.cpp:124-133`.
 
 ### leads into (lead-in)
 A playable card **leads into** the contiguous run of its successors that can be found
 in Bob's and Cathy's hands by sight, or in Alice's own where she names the card: a
 b3 leads into a b4 and a b5, but not into a b5 with no b4 in sight. In the High Score
-Phase, a play clue revealing an unknown playable of Bob's (of Cathy's, when Bob is
-loaded) that leads into two or more cards, or whose very next card is critical, is a
-**lead-in** and is HIGH, given at priority 1b (`high_score_lead_in`,
-`src/conventions/reactor0/decision.cpp:1141-1210`; CONVENTION.md §2s, v23.26.0;
+Phase, or at pace ≤ 1 (v23.39.0; replay 2028737 T46), a play clue revealing an unknown
+playable of Bob's (of Cathy's, when Bob is loaded) that leads into two or more cards,
+or whose very next card is critical, is a **lead-in** and is HIGH, given at priority
+1b (`high_score_lead_in`,
+`src/conventions/reactor0/decision.cpp:1141-1215`; CONVENTION.md §2s, v23.26.0;
 self-play Dark Null 9000007 T48).
 
 ### stall discard (forced endgame)

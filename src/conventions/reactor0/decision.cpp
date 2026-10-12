@@ -1140,12 +1140,15 @@ bool urgent_endgame_reactive(const Game& g, const ClueCandidate& c) {
 
 // THE HIGH SCORE PHASE LEAD-IN (Throw It in a Hole, v23.26.0, the user's ruling;
 // human_vs_bot_diagnostics/9000007_23_22.md T48, 9000081_23_22.md T51). Once plays
-// reach 2/3 of the maximum (`tiiah::high_score_phase`), a play clue that reveals an
-// unknown playable of Bob's -- or of Cathy's, when Bob is loaded -- is HIGH when that
-// card leads into at least two cards, or straight into a critical one. "Leads into"
-// is a contiguous run of its successors, each seen in Bob's or Cathy's hand or named
-// in Alice's own; "straight into a critical card" is a very next card so found, and
-// critical. "Revealed": no call and no known play before the clue, one after it.
+// reach 2/3 of the maximum (`tiiah::high_score_phase`), or in the endgame at pace <= 1
+// (v23.39.0, the user's ruling; 2028737.md T46: will-bot69's Yellow reveals yagami's
+// y3, into his critical y4 and will-bot67's y5, at pace 1 and 18 plays), a play clue
+// that reveals an unknown playable of Bob's -- or of Cathy's, when Bob is loaded -- is
+// HIGH when that card leads into at least two cards, or straight into a critical one.
+// "Leads into" is a contiguous run of its successors, each seen in Bob's or Cathy's
+// hand or named in Alice's own; "straight into a critical card" is a very next card so
+// found, and critical. "Revealed": no call and no known play before the clue, one
+// after it.
 // "Loaded" is TIIAH's: a standing play, or a reaction still owed. 9000007 T48:
 // sim-alice holds her called d5, so sim-bob's b3 counts, and it leads into sim-alice's
 // critical b4 and b5.
@@ -1159,7 +1162,9 @@ LeadIn high_score_lead_in(const Game& game, const Game& hypo) {
   LeadIn out;
   const State& s = game.state;
   if (!s.variant->throw_it_in_a_hole || !has_cathy(game)) return out;
-  if (!hanabi::tiiah::high_score_phase(s, s.turn_count)) return out;
+  // The pace term is ours alone: `high_score_phase` also decides what a reactive
+  // clue means, so it stays as it is.
+  if (!hanabi::tiiah::high_score_phase(s, s.turn_count) && s.pace() > 1) return out;
   const int alice = s.our_player_index;
   const int bob = s.next_player_index(alice);
   const int cathy = s.next_player_index(bob);
@@ -1353,7 +1358,8 @@ std::vector<ClueCandidate> analyse_clues(
     if (c.tier < ClueTier::HIGH && urgent_endgame_reactive(game, c)) {
       c.tier = ClueTier::HIGH;
     }
-    // ...and so is a High Score Phase lead-in (v23.26.0, the user's ruling).
+    // ...and so is a High Score Phase lead-in (v23.26.0, the user's ruling), or one at
+    // pace <= 1 (v23.39.0).
     {
       const LeadIn lead = high_score_lead_in(game, hypo);
       c.lead_in_cards = lead.cards;

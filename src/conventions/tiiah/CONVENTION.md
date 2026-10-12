@@ -43,7 +43,7 @@ what v16.0.0 was for, and finishing it is what v16.6.0 is.
 | The bucket-encoded reactive (§1d) | implemented (v16.3.0); the receiver's half (v16.9.0); its held negative (v16.11.0); the relation as a giver-side legality test (v16.15.0); read in the giver-and-receiver frame (v16.18.0); the receiver reads the reacter's card too (v16.19.0); the receiver's reading no longer dropped for missing the stamp (v16.26.0); an undeferred call no longer dropped as stale (v16.28.0); a finesse the receiver can prove, and the reacter's frame without its own card (v17.1.0); the reacter's card named for the team only as far as the receiver can (v17.2.0); a deferred reaction read the same way (v17.4.0); the receiver read before the call invariants, and a withdrawn target disarms the held negative (v18.14.0); the reacter's card is read only off the reacter's own play, not the reverse receiver's standing play (v20.16.0); an unreadable reactive falls back to the worlds (v19.3.0), and so does an unread reaction at the receiver (v20.5.0); the walk tries each target in the worlds before the next, on the shared ASCR routine (v20.6.0); a receiver reading conditional on every world keeps its call (v20.8.0); the reacter's own card reads its bucket in its own worlds, judged before the stamp (v20.10.0); a reacter whose finesse runs through the giver's own unknown hole play throws it (§1k), forward or reverse, rather than re-reading it on its own stacks (v20.1.0); the bucket first, a finesse only when provable (v22.0.0); the bucket rule a legality layer every seat applies (v22.4.0); the passed-over negative's "playable" judged on the shared view (v22.7.0); the receiver world fallback read at the reacter's own seat when its card is in one bucket (v22.9.0); our model of a partner books the copies on our stacks as spent, so a clue is newly useful as they read it (v22.10.0); a target at most one away only in some world is walked after the frame's, the reacter's card its connector where it is one away (v22.6.0); under single-suit buckets the relation's shift is ±1 on an odd epoch and ±2 on an even one, read at the clue's turn (v23.0.0); in the High Score Phase (the late game until v23.26.0), plays at least 2/3 of the maximum, the giver may give a globally known violation, and a reader whose bucket offers nothing the card could be reads any playable, not the finesse first (v23.23.0); there the giver takes the reacter's empathy as the reacter sees it, the giver's own named cards out of it (v23.25.0); a forced-endgame stall discard by an owing reacter is not the reaction (v23.27.0); at the reacter's own seat its card is read less what it can see is unplayed (v23.36.0); the bucket rule's target candidates leave out what the team accounts for elsewhere, a card named exactly included (v23.37.0) |
 | Superposition (§1e) | implemented (v16.1.0); the back-solve (v16.12.0); conditional readings (v16.13.0); never presume a strike (v16.16.0); the receiver reads the worlds too (v16.17.0); rule 3's pair form and rule 6 on one's own plays (v16.18.0); rule 6 raising our own stacks (v16.19.0); rule 6 SHARED (v16.21.0); rule 7, a named playable discarded was already played, and no gentleman's discard (v16.22.0); rule 6 against the shared view, and rows as floors (v16.23.0); the frame is the minimum across worlds, stable calls read in every world, world feasibility from reactions, play-order replay, evidence bands and a floored shared view (v16.24.0); the shared view settles on what every world agrees, the receiver's promise read on its own frame, rule 8 (a strike was already down) and hole requirements, notes in the team's reading (v16.25.0); a refusal with several candidates, and a watched dupe strike, floor the shared view (v16.27.0); the band never absorbs a named card (v16.28.0); a call live in some shared world is not dead (v16.29.0); an outside seat tries its own hole cards for a stable call (v17.1.0); a private deduction about our own hole cards stays out of the rows (v17.3.0); the target of a call on a card it can name settles its own hole cards (v17.5.0); a row replays our private settles with the set both seats of the pair hold (v18.1.0); a colour re-touch of a clued card defers the collapse to its holder, and rule 7 has a shared form (v18.12.0); a pink identity clue names a card for rule 7 (v19.0.0); a watched hole play is named by sight, not by a stale common copy (v19.1.0); a stable call is not widened by the giver's own hole cards (v20.4.0); the Actionable Superposition Collapse Rule, one shared routine (v20.6.0); a watched play that lands only if one of several hole cards was the card below it records that joint fact (v20.15.0); a card the team names above the shared view explains the gap below it (v20.16.0); a hole card is noted as its reading narrows (v20.17.0); an outside seat's world re-run and the dead-call test fall back to each seat's own hole cards past the world cap (v20.18.0); a card the team later names in the hole is evidence for world feasibility (v20.21.0); an identity with no copy left is no candidate for our own play (v20.23.0); a stable call read on the giver's frame in each world of the receiver's hole cards (v21.0.0); a reactive's call on the reacter narrows no hole card of the receiver's (v23.15.0); our own hole card named below a stack it raised landed, not struck (v23.22.0); no hole card, our own or a partner's, is named or settled as a card we can see is unplayed (v23.34.0) |
 | Rainbowy colour pinning (§1f) | implemented (v16.4.0); the giver's half, a colour clue never calls a rainbow card (v18.19.0), and may touch one it does not call (v18.20.0); a rank play clue on a new slot-1 card pins the rainbow (v20.13.0), or a white-ish special suit (v20.20.0) |
-| Decision making (§2) | implemented (v16.6.0), by delegation to reactor0; among reactive plays, the fewest receiver candidates (§2b, v16.28.0); never call a card we may already have played (§2c, v17.2.0), unless the call is named, whose holder reads a watched dupe (v18.18.0); never call a critical card to discard (§2d, v17.4.0); a critical chop nothing can ditch around is locked (reactor0 rung 3.10, v17.5.0); a locked hand below 8 tokens throws its least-critical card rather than pitch blind (reactor0 rung 12, v17.6.0); an occupied Alice saves a stuck Bob's chop when Cathy's is safe to lose (§2e, v18.13.0), or Cathy has a known safe action (v22.1.0); a locked Alice's stable play may go to a role-inverted Cathy (§2f, v18.15.0); a stuck Bob gets a play before a lock of a non-critical chop (§2g, reactor0 rung 3.6b, v18.16.0); no lock over a chop worse than one away (§2h, reactor0 rung 3.7, v20.2.0); no forced clue at 8 tokens while Alice can play (§2i, reactor0 §4, v20.2.0); a spent reaction stops being urgent, its pairing now recorded (§2j, reactor0 Precedence step 2, v20.7.0); a call that plays in every world of our hole cards is a known play (§2k, v20.9.0), and so is one that plays on the shared view (§2k, v20.11.0); a stable clue is also read blind, as its receiver reads it (§2q, v23.15.0); a forced clue ranks 4.2-4.5 together by the good-card product (§2r, v23.19.0); a special-suit reactive whose dark or Null cards a pending reaction already gets is not VERY HIGH (§2b, v23.21.0), whatever else it gets (v23.38.0); in the High Score Phase a play clue revealing a card that leads into the other hands is HIGH, given at priority 1b (§2s, v23.26.0); with two cards left and no token, Alice discards so the seat after next gets two turns (§2t, forced-endgame Rule 6, v23.27.0); a call delayed behind the holder's own queued plays waits for them (§1c, v23.29.0); a clue that gets played a copy of a card already called to play is at most MEDIUM (§2u, v23.29.0); a play known by touch makes Alice occupied, so no LOW clue is given over it (reactor0 DECISION_MAKING phase 1, v23.31.0); Cathy's critical chop is saved while Bob is loaded, a HIGH clue at priority 2d (§2v, v23.32.0); a critical, playable chop is given a play clue before any lock (reactor0 rung 3.5b), and a locked hand throws a card it sees again (§2w, v23.33.0); no stall that plays nothing while Bob holds a critical card and no play, unless it saves a good chop or a forced endgame requires it (§2x, v23.35.0); with one card left and two tokens, Alice stalls so the seat after next gets two turns, filling in Bob's good cards (§2y, forced-endgame Rule 7, v23.35.0); a player who begins a turn with a token clears every other player's zero-clue marker (reactor CONVENTION.md `chop()`, v23.38.0) |
+| Decision making (§2) | implemented (v16.6.0), by delegation to reactor0; among reactive plays, the fewest receiver candidates (§2b, v16.28.0); never call a card we may already have played (§2c, v17.2.0), unless the call is named, whose holder reads a watched dupe (v18.18.0); never call a critical card to discard (§2d, v17.4.0); a critical chop nothing can ditch around is locked (reactor0 rung 3.10, v17.5.0); a locked hand below 8 tokens throws its least-critical card rather than pitch blind (reactor0 rung 12, v17.6.0); an occupied Alice saves a stuck Bob's chop when Cathy's is safe to lose (§2e, v18.13.0), or Cathy has a known safe action (v22.1.0); a locked Alice's stable play may go to a role-inverted Cathy (§2f, v18.15.0); a stuck Bob gets a play before a lock of a non-critical chop (§2g, reactor0 rung 3.6b, v18.16.0); no lock over a chop worse than one away (§2h, reactor0 rung 3.7, v20.2.0); no forced clue at 8 tokens while Alice can play (§2i, reactor0 §4, v20.2.0); a spent reaction stops being urgent, its pairing now recorded (§2j, reactor0 Precedence step 2, v20.7.0); a call that plays in every world of our hole cards is a known play (§2k, v20.9.0), and so is one that plays on the shared view (§2k, v20.11.0); a stable clue is also read blind, as its receiver reads it (§2q, v23.15.0); a forced clue ranks 4.2-4.5 together by the good-card product (§2r, v23.19.0); a special-suit reactive whose dark or Null cards a pending reaction already gets is not VERY HIGH (§2b, v23.21.0), whatever else it gets (v23.38.0); in the High Score Phase a play clue revealing a card that leads into the other hands is HIGH, given at priority 1b (§2s, v23.26.0), and so it is at pace ≤ 1 (v23.39.0); with two cards left and no token, Alice discards so the seat after next gets two turns (§2t, forced-endgame Rule 6, v23.27.0); a call delayed behind the holder's own queued plays waits for them (§1c, v23.29.0); a clue that gets played a copy of a card already called to play is at most MEDIUM (§2u, v23.29.0); a play known by touch makes Alice occupied, so no LOW clue is given over it (reactor0 DECISION_MAKING phase 1, v23.31.0); Cathy's critical chop is saved while Bob is loaded, a HIGH clue at priority 2d (§2v, v23.32.0); a critical, playable chop is given a play clue before any lock (reactor0 rung 3.5b), and a locked hand throws a card it sees again (§2w, v23.33.0); no stall that plays nothing while Bob holds a critical card and no play, unless it saves a good chop or a forced endgame requires it (§2x, v23.35.0); with one card left and two tokens, Alice stalls so the seat after next gets two turns, filling in Bob's good cards (§2y, forced-endgame Rule 7, v23.35.0); a player who begins a turn with a token clears every other player's zero-clue marker (reactor CONVENTION.md `chop()`, v23.38.0) |
 | The fix clue (§1h) | implemented (v16.20.0); deadness on the giver-and-holder view, and the call withdrawn by the fix (v17.2.0) |
 | Naming the called card (§2a) | implemented (v16.7.0); the stable play hierarchy — fewest inferences, ancillary value, the rest of the hand, colour (v18.17.0) |
 
@@ -683,7 +683,7 @@ identity is `stable_one_identity`
 - **The giver.** A stable 1 play clue whose called card is not that identity is never
   given (`ClueCandidate::illegal_stable_one`, set in `tiiah::annotate_candidate` at
   `src/conventions/tiiah/interpret_reactive.cpp:2122-2131` and dropped in
-  `reactor0::analyse_clues` at `src/conventions/reactor0/decision.cpp:1560`). When no
+  `reactor0::analyse_clues` at `src/conventions/reactor0/decision.cpp:1566`). When no
   stack is at 0 no stable 1 play clue is given. Other stable 1s (reveals, saves,
   locks, stalls, discards) are untouched.
 - **Examples.** In Black (6 Suits) only the k1 until black starts. In Dark Null the
@@ -1061,14 +1061,14 @@ urgent return, which is the very thing being declined. The tier itself
 Two more things make it actually get given (v16.27.0):
 
 - **The tier gate does not apply to it** (`clue_is_admissible`,
-  `reactor0/decision.cpp:1637`), as it does not to the fix (§1h). A refusal stamps
+  `reactor0/decision.cpp:1643`), as it does not to the fix (§1h). A refusal stamps
   nothing, so it is always LOW, and an OCCUPIED reacter — which a reacter holding
   the urgent call always is — had every refusal rejected before its priority was
   consulted. Replay [2011854](https://hanab.live/shared-replay/2011854#27) T27:
   yagami's Rank 3 named will-bot69's o29, a p1, while his own o24 p1 was already in
   the hole; will-bot67 had five refusals on offer, the gate dropped them all, it
   answered the reaction, and will-bot69 struck at T28.
-- **Which refusal** (`refusal.stable_play`, `reactor0/decision.cpp:2884-2894`). Any
+- **Which refusal** (`refusal.stable_play`, `reactor0/decision.cpp:2890-2900`). Any
   stable clue to the receiver will do, so the one chosen should also be worth giving:
   a stable PLAY clue, ranked by §2a's stable play hierarchy (`settle_stable_play`, the
   same tiebreak every stable-play rung uses; before v18.17.0 its single term, "names
@@ -2371,7 +2371,7 @@ its own seat, which sees cards the team's reading does not, so 2013726's 4 still
 stands (black reads its r4, below). The receiver's reading is the predicted one,
 and a pairing on the both-know licence names its card. The candidate is flagged by
 `tiiah::annotate_candidate` (`src/conventions/tiiah/interpret_reactive.cpp:2190-2233`)
-and dropped in `reactor0::analyse_clues` (`src/conventions/reactor0/decision.cpp:1560`).
+and dropped in `reactor0::analyse_clues` (`src/conventions/reactor0/decision.cpp:1566`).
 Self-play Dark Null seed 80 (`human_vs_bot_diagnostics/9000080.md` T44):
 - at pace ≤ 1, sim-bob's 5 to sim-alice paired sim-cathy's o40, the b2, with
   sim-alice's g5, and the bucket read o40 as `{y4}`;
@@ -3686,7 +3686,7 @@ ladder would have read into the cards it *did* touch, so a colour yellow that fi
 one card cannot also call the yellow it touched. TODO.md 53 records the envelope form.
 
 **Priority: Precedence step 1**, with the refusal, and within step 1 between rung 2
-and rung 2c (the unlock, v20.19.0) — `rung_2b` (`reactor0/decision.cpp:2212-2216`), logged as `2b.fix`. Step 1
+and rung 2c (the unlock, v20.19.0) — `rung_2b` (`reactor0/decision.cpp:2218-2222`), logged as `2b.fix`. Step 1
 is above the pending reaction because a fix is not an alternative to anything: left
 ungiven it is a strike. It also carries an exemption from the tier gate
 (`clue_is_admissible`), because a fix stamps nothing, satisfies no arm of `clue_tier`,
@@ -3935,7 +3935,7 @@ licence (§1d, *...but never one that has a player misname its card*). Human dia
 bucket read any playable, the 4 to green left `{g1,...}` for green's g1, and a Blue
 to green the narrower `{n3}`, so the tiebreak took the Blue; the 4 stands again.
 It writes `ClueCandidate::receiver_reading_size`, which `rung_1`
-(`src/conventions/reactor0/decision.cpp:1788-1819`) reads first. reactor0 cannot call
+(`src/conventions/reactor0/decision.cpp:1794-1825`) reads first. reactor0 cannot call
 into this convention, so `reactor0::analyse_clues` takes an optional
 `CandidateAnnotator` and the engine passes this one under TIIAH
 (`candidate_annotator`, `src/basics/decide.cpp:53-56`); outside TIIAH the field stays
@@ -4008,7 +4008,7 @@ Human diagnostic 2014561 T56:
 
 **Except Bob's chop, when Bob is stuck with it (v18.7.0).** When §3's precondition
 holds (`priority_3_applies`: Bob's chop is at risk or playable, and he has no safe
-action), the filter spares Bob's chop (`analyse_clues`, `reactor0/decision.cpp:1244-1248`, applied at `:1298`).
+action), the filter spares Bob's chop (`analyse_clues`, `reactor0/decision.cpp:1249-1253`, applied at `:1298`).
 The choice there is between a possible duplicate and a certain loss, and a human
 saves the card.
 
@@ -4042,7 +4042,7 @@ played her call and Bob threw his chop. The reviewer: "Bob almost never stops to
 or save a playable card at risk on Cathy's chop."
 
 So a clue to Bob that touches his chop, without calling it to discard, is flagged
-`saves_stuck_bob_chop` (`reactor0/decision.cpp:1511-1514`) and exempt from the gate
+`saves_stuck_bob_chop` (`reactor0/decision.cpp:1517-1520`) and exempt from the gate
 (`:1637`) when all of the following hold (`:1259-1266`, over `cathy_chop_is_safe_to_lose`, `:1038-1053`):
 
 - §3's precondition holds (`priority_3_applies`): Bob has no safe action.
@@ -4145,7 +4145,7 @@ It now gives the Green.
 The user's ruling: the variant is hard, so rung 3.7 locks a stuck Bob only when his
 chop is **critical, playable or one away from playable**, judged on Alice's own
 stacks (`chop_worth_a_lock`, `src/conventions/reactor0/state_eval.cpp:167-179`, read
-at `src/conventions/reactor0/decision.cpp:2378-2391`). Anything further away is not
+at `src/conventions/reactor0/decision.cpp:2384-2397`). Anything further away is not
 worth committing his whole hand for, and Alice does something else instead, most
 often her own standing play. 3.6b (§2g) goes with the lock it replaces. 3.6 and 3.10
 already need a critical chop, and §4's lock, the forced branch, is unchanged. This
@@ -4166,7 +4166,7 @@ A change to reactor0's shared ladder, for every convention that delegates to it.
 tokens reactor0 §4, the forced-clue list whose floor always returns a clue, now opens
 only when Alice has no known play, or Bob is stuck on a hidden playable that a clue
 moves now, or a clue gets two plays (4a-4c, the pace arm's own qualifiers;
-`priority_4_applies`, `src/conventions/reactor0/decision.cpp:2601-2612`). A discard
+`priority_4_applies`, `src/conventions/reactor0/decision.cpp:2607-2618`). A discard
 is illegal at 8 tokens, but a play is not.
 
 Human diagnostic [2018365](../../../human_vs_bot_diagnostics/2018365.md) T10: at 8
@@ -4375,12 +4375,12 @@ TIIAH only for now (TODO.md 63: reactor0 and every variant). At **pace <= 1**, w
 **How it is given:**
 - **Ahead of everything.** It comes before Alice's known play and before the endgame
   search: `choose_urgent_endgame_reactive`
-  (`src/conventions/reactor0/decision.cpp:1214-1234`, over `urgent_endgame_reactive`,
+  (`src/conventions/reactor0/decision.cpp:1219-1239`, over `urgent_endgame_reactive`,
   `:1096-1133`), asked by `take_action_ladder` before the endgame fork
   (`src/basics/decide.cpp:1381-1393`).
 - **Which one.** Among several: the most special-suit cards (§2b), then the fewest
   receiver candidates, then the default score.
-- **Tier.** It is also lifted to HIGH (`analyse_clues`, `decision.cpp:1353-1355`), so
+- **Tier.** It is also lifted to HIGH (`analyse_clues`, `decision.cpp:1358-1360`), so
   the clue ladder admits it for an occupied Alice.
 
 This is the other side of §2m: there Bob held fewer than two criticals and Alice
@@ -4392,7 +4392,7 @@ critical -- now comes before sim-alice's called o48.
 
 At one token, where reactor0's priority 3 would reveal trash to a stuck Bob (3.3, a
 `TRASH_REVEAL`), a stable play clue to him comes first, though 3.1 needs two tokens
-(`rung_3`, `src/conventions/reactor0/decision.cpp:2302-2314`). A play gets Bob moving;
+(`rung_3`, `src/conventions/reactor0/decision.cpp:2308-2320`). A play gets Bob moving;
 the reveal only lets him wait. Self-play Dark Null seed 22 T39
 (`human_vs_bot_diagnostics/9000022.md`): Blue to sim-alice over the rank 1. The far-chop
 rule still holds: no stable play replaces a lock 3.7 would not give
@@ -4429,12 +4429,19 @@ will-bot67 filled in will-bot69's trash g1 with a 1 when a 5, a stable discard o
 another trash g1, would have let him name his unclued b5. It now gives the 5.
 `tests/test_tiiah/test_decision_making/test_replay_2026350_forced_clue_prefers_the_informative_five.cpp`.
 
-### §2s In the High Score Phase, a play clue that leads into the other hands is HIGH (v23.26.0, the user's ruling)
+### §2s In the High Score Phase or the endgame, a play clue that leads into the other hands is HIGH (v23.26.0, v23.39.0, the user's rulings)
 
 The **High Score Phase** begins once the plays made reach 2/3 of the maximum score,
 20 in six suits. It is the same measure v23.23.0 named "the late game"
 (`tiiah::high_score_phase`, `src/conventions/tiiah/buckets.cpp:124-133`). In it,
 getting the other players' hands moving matters more.
+
+**So it does in the endgame, at pace ≤ 1** (v23.39.0, the user's ruling), whatever
+the plays.
+- It is the threshold the urgent endgame reactive (§2o) uses.
+- The pace term is the lead-in's alone (`src/conventions/reactor0/decision.cpp:1167`).
+  `high_score_phase` also decides how a reactive clue is read (§1d), so it is
+  unchanged.
 
 A clue is **HIGH** (reactor0 DECISION_MAKING.md, H6) when it reveals a playable card
 that leads into the other hands:
@@ -4450,10 +4457,10 @@ that leads into the other hands:
   critical. A blue 3 leads into the b4 and the b5, but not into a b5 when no b4 can
   be found.
 
-`high_score_lead_in` (`src/conventions/reactor0/decision.cpp:1141-1210`) counts the
+`high_score_lead_in` (`src/conventions/reactor0/decision.cpp:1141-1215`) counts the
 cards that qualify, the longest run and whether a next card is critical, and
-`analyse_clues` lifts the clue to HIGH (`:1349-1356`). **Priority 1b**
-(`rung_high_score_lead_in`, `:1814-1834`; `choose_clue`, `:3085-3086`) gives it after
+`analyse_clues` lifts the clue to HIGH (`:1361-1369`). **Priority 1b**
+(`rung_high_score_lead_in`, `:1827-1847`; `choose_clue`, `:3156-3157`) gives it after
 a reactive play clue and before a reactive discard (the user's placement). Its
 tiebreaks, in order: most cards revealed, longest run, a critical next card, then the
 default. HIGH clears the tier gate's MEDIUM bar and an occupied Alice's HIGH bar. It
@@ -4473,10 +4480,31 @@ b3, so it is a HIGH lead-in. The 1 to sim-bob, a reactive play (§1d), still com
 first, as the user ranks it. `tests/test_tiiah/test_decision_making/test_selfplay_9000007_high_score_lead_in.cpp`
 pins both.
 
+Replay [2028737](https://hanab.live/shared-replay/2028737) T46 (TIIAH & Dark Orange;
+`human_vs_bot_diagnostics/2028737.md`), the endgame arm:
+- Stacks r1 y2 g5 b5 p5 d0, so 18 plays, short of the phase. 5 tokens, pace 1.
+- will-bot69 holds o25, called to discard. With an inverted suit in the variant, that
+  call makes it occupied, so it needs a HIGH clue.
+- Yellow to yagami calls his y3, which leads into his own critical y4 and will-bot67's
+  y5. It read LOW, and will-bot69 chucked o25, taking pace to 0.
+- It now gives Yellow (`1b.high_score_lead_in`).
+  `tests/test_tiiah/test_decision_making/test_replay_2028737_endgame_lead_in.cpp`.
+
 A/B on TIIAH & Black (6 Suits), seeds 1–200, against v23.25.0:
 - mean 25.93 → 25.995, strikeouts 5 → 3, 30/30 11 → 13;
 - cards ever read wrongly 159 → 173;
 - priority 1b fired 109 times in 84 games, and 34 games moved, net +13 points.
+
+The endgame arm, A/B on seeds 1–200 against v23.38.0
+(`self_play_diagnostics/results/v23.39.0.md`):
+- TIIAH & Black (6 Suits): mean 26.345 → 26.315, strikeouts 5 → 5, 30/30 10 → 11,
+  cards ever read wrongly 181 → 194.
+  - Priority 1b fired 101 → 223 times.
+  - 34 games moved, net -6; 30 of them first diverge on an endgame lead-in.
+- TIIAH & Dark Orange (6 Suits), the replay's variant: mean 24.795 → 24.820,
+  strikeouts 21 → 21, 30/30 4 → 4, cards ever read wrongly 398 → 404.
+  - Priority 1b fired 81 → 170 times.
+  - 24 games moved, net +5, all on an endgame lead-in.
 
 ### §2t Discard so that the seat after next gets two turns (forced-endgame Rule 6, v23.27.0, the user's ruling)
 
@@ -4564,7 +4592,7 @@ saves the chop, so that Bob can play. The save is a HIGH clue, given at priority
 - **The position.** Bob holds a standing play, so a clue to Cathy is stable (role
   inversion, §1c). Cathy has no safe action and no standing play. Her chop, by
   Alice's sight, is critical and not playable
-  (`src/conventions/reactor0/decision.cpp:1273-1293`).
+  (`src/conventions/reactor0/decision.cpp:1278-1298`).
 - **The clue.** A stable clue to Cathy that touches the chop and does not call it to
   discard (`saves_cathys_critical_chop`, lifted to HIGH at `:1357-1368`). A clue she
   reads as reactive is not the save. In the first A/B, self-play 9000141 T7 had a
@@ -4588,7 +4616,7 @@ Replay [2026882](https://hanab.live/shared-replay/2026882) T25
 
 **A play clue on Bob's critical, playable chop comes before every lock and ditch.**
 Rung 3.5b, in reactor0's priority 3 (`rung_3`,
-`src/conventions/reactor0/decision.cpp:2322-2343`):
+`src/conventions/reactor0/decision.cpp:2328-2349`):
 - **When:** Bob's chop is critical (`chop_is_critical`) and playable on Alice's
   stacks.
 - **What:** the best stable play clue whose called card is that chop
@@ -4711,7 +4739,7 @@ no token. This is a reactor0 rule, so Throw It in a Hole reads the counts off Al
 private stacks, as Rules 5 and 6 do.
 
 **Which stall: the fill-in** (`reactor0::choose_fill_in_stall`,
-`src/conventions/reactor0/decision.cpp:3088-3122`, chosen in `prefer_stall_clue`,
+`src/conventions/reactor0/decision.cpp:3094-3128`, chosen in `prefer_stall_clue`,
 `src/basics/decide.cpp:1491-1506`).
 - **The pool:** stable clues to Bob that give him nothing to throw. That is a play
   call on a card he needs, a trash reveal, or a clue with no subject. A discard call,
@@ -4910,6 +4938,7 @@ mean 26.39 → 26.39, max scores 13 → 14. On v23.34.0 the fill-in fires 11 tim
 | `tests/test_tiiah/test_decision_making/test_replay_2027811_known_violation_named_elsewhere.cpp` | §1d — replay 2027811 T40 (TIIAH & Gray Pink): yagami's 5 pairs will-bot69's r4 with will-bot67's i5; the y5 the bucket names is yagami's called o30, so the violation is known and will-bot69 plays slot 3; on an edited T40, will-bot67 reads o36 as any playable, never the y5 (v23.37.0) |
 | `tests/test_tiiah/test_decision_making/test_replay_2027922_coming_dark_card_not_very_high.cpp` | §2b — replay 2027922 T22 (TIIAH & Dark Brown): will-bot67 owes its r4, whose reaction calls yagami's d2; Blue to will-bot69 would re-get that d2 with a new b2, so it is not VERY HIGH and will-bot67 plays o24 (v23.38.0) |
 | `tests/test_tiiah/test_decision_making/test_replay_2027922_zero_clue_marker_clears_at_turn_start.cpp` | reactor `chop()` — replay 2027922 T27: will-bot69 begins its turn with the token yagami's discard bought back, so will-bot67's chop is the r2 he drew during the stall, not the d4, and will-bot69 does not lock it; yagami's marker clears too, will-bot69's own stays (v23.38.0) |
+| `tests/test_tiiah/test_decision_making/test_replay_2028737_endgame_lead_in.cpp` | §2s — replay 2028737 T46: pace 1, 18 plays; will-bot69, occupied by a call to discard, gives Yellow to yagami, his y3 into his critical y4 and will-bot67's y5, an endgame lead-in, not the chuck of o25 (v23.39.0) |
 | `tests/test_tiiah/test_replay_2027736_receiver_call_read_through_own_sight.cpp` | §1d — replay 2027736 T51 (TIIAH & Gray Pink): will-bot69's o36, the b5, stays called `{b5}` at will-bot67's seat, read from o44 as `{r4,i1}` (its own sight), not the team's `{r4,b5,p3,i1}` (v23.36.0) |
 | `tests/test_tiiah/test_decision_making/test_replay_2027736_reverse_reactive_two.cpp` | §1c — replay 2027736 T51: with will-bot69 loaded, the 2 to it is a reverse reactive on its p3 and yagami's i3; the p3 the clue itself reveals is a target, not a queued play (v23.36.0) |
 | `tests/test_tiiah/test_replay_2027454_own_play_not_named_by_seen_card.cpp` | §1d/§1e and the stack invariant (§1.3) — replay 2027454 T44 (TIIAH & Gray Pink): will-bot67's T41 o39, which the team named the g3 while it saw both g3s, is in the hole as `{y2,p3}`; common and both pair rows keep green on 2, and no view passes a card in sight (v23.34.0) |
