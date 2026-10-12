@@ -800,17 +800,21 @@ is not — the same shape `reactor0::wc_is_even_parity`
 ## 33. `[reactor0]` The zero-clue safety promise and the chuck list have no defined interaction
 
 The **zero-clue safety promise**: the chop is locked in on the turn a clue takes
-the team down to zero clues, and is not reset until the player before Alice has
-at least one clue remaining. Cards drawn during the stall are not chop, so the
-player who drew them is not expected to throw them, and the promise is that the
-locked card is safe to lose.
+the team down to zero clues, and is not reset until another player begins a
+turn with at least one clue, whether or not he acts. Cards drawn during
+the stall are not chop, so the player who drew them is not expected to throw
+them, and the promise is that the locked card is safe to lose.
 
-The lock itself is implemented. `Game::zcs_turn` records the turn the team ran
-dry (`decide.cpp:477`), `chop`'s second pass skips any card drawn after it
-(`decide.cpp:937-943`), and `reset_zcs` fires only on an action taken from a
-state that still had a clue (`decide.cpp:476`, `:713`, `:810`) — so a discard
-that buys the token back does not clear it, which is the "until the player
-before Alice has at least one clue" part.
+The lock itself is implemented.
+- `Game::zcs_turn` records the turn the team ran dry (`decide.cpp:477-480`).
+- `chop`'s second pass skips any card drawn after it while `Game::zcs_gates` holds
+  for that player (`decide.cpp:941-947`).
+- A player who begins his turn with a token clears the marker for every other
+  player (`Game::zcs_turn_starts`, `decide.cpp:952-964`; v23.38.0, the user's
+  ruling, `human_vs_bot_diagnostics/2027922.md` T27).
+- Before v23.38.0 the marker cleared for everyone, but only after an action taken
+  from a state that still had a clue, so a discard that bought the token back left
+  it set for one turn more.
 
 **Settled in v16.23.0: a lock that leaves NO chop.** When every card that
 predates the lock is clued, the promise has nothing to protect, and the ruling is
@@ -833,7 +837,10 @@ conflict:
   safe, and a known-trash card in hand is a strictly cheaper thing to lose.
 
 **Worked example — replay 1972691 T24**, "Odds and Evens & Light Pink (4 Suits)",
-stacks `[4,4,4,2]`, `zcs_turn = 20` with one clue back on the counter.
+stacks `[4,4,4,2]`, `zcs_turn = 20` with one clue back on the counter. It came
+back with a discard at T23, by a player who began that turn with none, and
+will-bot67 is the first to begin a turn with it, so under v23.38.0's rule its own
+marker still holds.
 will-bot67's locked chop was order 23, a **b5 — playable and critical**; order 27,
 drawn during the stall, was correctly skipped. It threw the b5. From v10.4.0 it
 throws order 13 instead, an r1 it reads as `{r1,r3,r4}` with red on 4, i.e.

@@ -337,15 +337,16 @@ std::vector<ClueCandidate> analyse_clues(
 // clues the gate would otherwise flatten.
 bool clue_is_admissible(const Game& game, const ClueCandidate& c);
 
-// THE ONE EXCEPTION to the special-suit VERY HIGH (v23.21.0, the user's ruling;
-// Throw It in a Hole). A reactive play that gets a dark special-suit or Null card
-// played is VERY HIGH, unless it BOTH
-//   1. gets a card that a pending reaction will call to play anyway once its
-//      reacter reacts (the receiver target of a standing or owed reaction), and
-//   2. gets a card the receiver already holds called to play, or knows plays.
-// Such a clue spends a token on two plays that were coming anyway. Replay 2026415
-// T44: will-bot67 owed its b1, which calls will-bot69's u2, and gave a 1 pairing
-// that u2 with yagami_black's r5, already called by a reverse reactive.
+// THE ONE EXCEPTION to the special-suit VERY HIGH (Throw It in a Hole). A reactive
+// play that gets a dark special-suit or Null card played is VERY HIGH, unless
+// every such card it gets is one a pending reaction will call to play anyway once
+// its reacter reacts (the receiver target of a standing or owed reaction, or the
+// target a reacter's call records). The reacter's play already gets that card;
+// a clue that re-gets it is not worth stopping for (v23.38.0, the user's ruling;
+// human_vs_bot_diagnostics/2027922.md T22: will-bot67 owed its r4, which calls
+// yagami_black's d2, and gave Blue pairing that d2 with will-bot69's new b2).
+// v23.21.0 demoted such a clue only when its receiver card was also already
+// called (replay 2026415 T44), which T22's new b2 was not.
 bool special_play_already_coming(const Game& game, const ClueCandidate& c);
 
 // Section 4's gate — THREE SEPARATE TRIGGERS (v13.2.0):

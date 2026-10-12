@@ -257,6 +257,7 @@ json build_replay_section(const Game& game) {
     replay["reactive_overrides"] = std::move(ov);
   }
   replay["zcs_turn"] = game.zcs_turn;
+  replay["zcs_cleared"] = game.zcs_cleared;
 
   // Ground-truth deck: for every order that has a known identity in
   // deck_ids (i.e. the bot has observed it as a draw — either via the
@@ -527,7 +528,9 @@ Game apply_snapshot(const json& record,
   }
 
   game.catchup = false;
-  if (replay.contains("zcs_turn")) game.zcs_turn = replay.at("zcs_turn").get<int>();
+  // `zcs_turn` and `zcs_cleared` are not read back: replaying the history above
+  // recomputes them, and a recorded value would pin the logging build's rule
+  // (v23.38.0 changed when the zero-clue marker clears).
   return game;
 }
 

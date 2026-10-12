@@ -19,7 +19,7 @@ The shared engine reads a named playable thrown away as "you hold the other copy
 the card **was already played** — by us, since our stacks can only be short by
 what we threw in the hole — and it collapses our superpositions instead
 (`presume_discard_was_played`, CONVENTION.md §1e rule 7). `useful_dc` excludes a
-playable card in a hole variant (`src/basics/decide.cpp:581-590`). Replay 2011319.
+playable card in a hole variant (`src/basics/decide.cpp:585-594`). Replay 2011319.
 
 ### believed stacks
 `State::play_stacks` under TIIAH. We resolve each hidden action against the card
@@ -316,7 +316,7 @@ b3 leads into a b4 and a b5, but not into a b5 with no b4 in sight. In the High 
 Phase, a play clue revealing an unknown playable of Bob's (of Cathy's, when Bob is
 loaded) that leads into two or more cards, or whose very next card is critical, is a
 **lead-in** and is HIGH, given at priority 1b (`high_score_lead_in`,
-`src/conventions/reactor0/decision.cpp:1135-1204`; CONVENTION.md §2s, v23.26.0;
+`src/conventions/reactor0/decision.cpp:1141-1210`; CONVENTION.md §2s, v23.26.0;
 self-play Dark Null 9000007 T48).
 
 ### stall discard (forced endgame)

@@ -142,6 +142,7 @@ add_executable(hanabi_tests
   tests/test_basics/test_stack_invariant.cpp
   tests/test_basics/test_game.cpp
   tests/test_basics/test_chop.cpp
+  tests/test_basics/test_zcs_marker.cpp
   tests/test_basics/test_snapshot_convention.cpp
   tests/test_basics/test_reactive.cpp
   tests/test_basics/test_stable_ref_discard.cpp
@@ -437,6 +438,8 @@ add_executable(hanabi_decision_tests
   tests/test_tiiah/test_decision_making/test_replay_2027454_reacts_to_the_g3.cpp
   tests/test_tiiah/test_decision_making/test_replay_2027736_reverse_reactive_two.cpp
   tests/test_tiiah/test_decision_making/test_replay_2027811_known_violation_named_elsewhere.cpp
+  tests/test_tiiah/test_decision_making/test_replay_2027922_coming_dark_card_not_very_high.cpp
+  tests/test_tiiah/test_decision_making/test_replay_2027922_zero_clue_marker_clears_at_turn_start.cpp
   tests/test_tiiah/test_decision_making/test_selfplay_9000081_both_name_their_card_late.cpp
   tests/test_tiiah/test_decision_making/test_replay_2024676_finesse_duping_a_call_is_not_very_high.cpp
   tests/test_tiiah/test_decision_making/test_replay_2025193_no_five_ahead_of_a_lower_playable.cpp

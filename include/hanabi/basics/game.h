@@ -364,7 +364,14 @@ class Game {
   // before rule 7 can settle that card, read by `interpret_discard`.
   std::optional<int> tiiah_discharge;
 
+  // THE ZERO-CLUE MARKER: the turn a clue took the team to zero tokens, -1 when
+  // none is live. `chop` skips a card drawn after it, so the card that was chop
+  // when the team ran dry stays chop. A player's marker clears when any other
+  // player begins a turn with a token (v23.38.0, the user's ruling;
+  // human_vs_bot_diagnostics/2027922.md T27), one bit per player in
+  // `zcs_cleared`.
   int zcs_turn = -1;
+  unsigned zcs_cleared = 0;
 
   // --- Factory ---
   static Game create(int table_id, State state);
@@ -476,7 +483,17 @@ class Game {
   void clear_contradicted_call(int order);
 
   // Reset the zcs_turn marker (zero-clue-starved tracking).
-  void reset_zcs() { zcs_turn = -1; }
+  void reset_zcs() {
+    zcs_turn = -1;
+    zcs_cleared = 0;
+  }
+  // Whether the zero-clue marker still gates `player_index`'s chop.
+  bool zcs_gates(int player_index) const {
+    return zcs_turn != -1 && !((zcs_cleared >> player_index) & 1u);
+  }
+  // `player_index` is about to begin a turn: with a token in hand, the marker no
+  // longer gates any other player's chop, whether or not he acts.
+  void zcs_turn_starts(int player_index);
 
   // --- Status predicates ---
   bool is_touched(int order) const;
@@ -504,7 +521,7 @@ class Game {
   // --- Reactor convention helpers (live on Game so state_eval can use them) ---
 
   // The discard candidate for `player_index`: priority is CalledToDiscard, then
-  // newest-unclued-NONE filtered by zcs_turn.
+  // newest-unclued-NONE filtered by the zero-clue marker (`zcs_gates`).
   std::optional<int> chop(int player_index) const;
 
   // Whether Bob (next player after current) has permission to discard.

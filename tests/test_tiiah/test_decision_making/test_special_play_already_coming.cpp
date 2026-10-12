@@ -1,14 +1,16 @@
 // The one exception to the special-suit VERY HIGH (reactor0 DECISION_MAKING.md,
-// Clue Tier Definitions; v23.21.0, the user's ruling; replay 2026415 T44).
+// Clue Tier Definitions; v23.21.0, v23.38.0, the user's rulings; replay 2026415
+// T44, human_vs_bot_diagnostics/2027922.md T22).
 //
 // A reactive play that gets a dark special-suit or Null card played is VERY HIGH,
-// unless it BOTH gets a card a pending reaction will call anyway once its reacter
-// reacts, AND gets a card the receiver already holds called or knows plays.
+// unless every such card it gets is one a pending reaction will call anyway once
+// its reacter reacts. Until v23.38.0 the exception also needed the receiver's card
+// to be already called or known to play.
 //
 // The live T44 position does not replay from the log (the replay parts from the
 // live state well before it, at every build back to v23.18.0), so this pins the
 // predicate on its shape: Alice owes a reaction whose receiver target is Bob's u2,
-// and a 1 to Cathy would pair that u2 with Cathy's r5, already called.
+// and a 1 to Cathy would pair that u2 with Cathy's r5.
 #include <gtest/gtest.h>
 
 #include <string>
@@ -101,8 +103,19 @@ TEST(TiiahSpecialPlayAlreadyComing, NothingOwedKeepsVeryHigh) {
   EXPECT_FALSE(hanabi::reactor0::special_play_already_coming(g, one_to_cathy(g)));
 }
 
-// The r5 is not yet called or known: the clue gets it new, so it keeps VERY HIGH.
-TEST(TiiahSpecialPlayAlreadyComing, ANewReceiverCardKeepsVeryHigh) {
+// The r5 is not yet called or known, but it is a plain card: the u2 is the clue's
+// only claim to VERY HIGH, and Alice's reaction already gets it (v23.38.0; 2027922
+// T22's shape, a new b2 paired with a d2 the pending reaction calls).
+TEST(TiiahSpecialPlayAlreadyComing, ANewPlainReceiverCardDoesNotKeepVeryHigh) {
   Game g = position(/*r5_called=*/false, /*reaction_owed=*/true);
-  EXPECT_FALSE(hanabi::reactor0::special_play_already_coming(g, one_to_cathy(g)));
+  EXPECT_TRUE(hanabi::reactor0::special_play_already_coming(g, one_to_cathy(g)));
+}
+
+// A clue that gets a dark card no reaction calls keeps VERY HIGH: Bob's u5 reacting
+// for Cathy's r5, while Alice's reaction calls only the u2.
+TEST(TiiahSpecialPlayAlreadyComing, ANewDarkCardKeepsVeryHigh) {
+  Game g = position(/*r5_called=*/false, /*reaction_owed=*/true);
+  ClueCandidate c = one_to_cathy(g);
+  c.reading.reacter_side.order = order_at(g, TestPlayer::BOB, 2);
+  EXPECT_FALSE(hanabi::reactor0::special_play_already_coming(g, c));
 }

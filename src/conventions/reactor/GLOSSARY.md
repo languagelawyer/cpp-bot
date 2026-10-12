@@ -111,9 +111,9 @@ the *pinkish* convention path. `src/basics/variant.cpp:243-244`;
 The card the hand is expected to get rid of next: the card stamped
 `CALLED_TO_DISCARD` with the largest `signal_turn` (hand order breaks ties), or —
 if the hand holds none — the **newest** unclued card whose status is `NONE`,
-gated by `zcs_turn`. Any non-`NONE` status (`CALLED_TO_PLAY`, `CHOP_MOVED`,
+gated by the zero-clue marker (`zcs_turn`). Any non-`NONE` status (`CALLED_TO_PLAY`, `CHOP_MOVED`,
 `PERMISSION_TO_DISCARD`) disqualifies a card, so a locked hand has no chop at
-all. `Game::chop`, `decide.cpp:469-496`.
+all. `Game::chop`, `decide.cpp:920-950`.
 
 A player always *chucks* their chop, except when its inference is a known orange
 card, which is *pitched* instead — see *pitch / chuck*.
@@ -175,12 +175,12 @@ Variant flag making every card of a given rank single-copy, hence critical.
 `CardStatus::CALLED_TO_DISCARD`. The convention has designated this card as
 the one to discard. **⚠ A physical action label**: it means "press the discard
 button", which on an inverted (Orange) suit is a *play* attempt.
-`card.h:25`; `decide.cpp:791-793`.
+`card.h:25`; `decide.cpp:795-797`.
 
 ### CTP — called to play
 `CardStatus::CALLED_TO_PLAY`. Queued to be played. Same physical-label caveat
 as CTD: on an inverted suit, pressing play sends the card to the discard pile.
-`card.h:24`; `decide.cpp:788-790`.
+`card.h:24`; `decide.cpp:792-794`.
 
 ### dark suits
 Black, Dark, Gray, Cocoa — one copy each, so always critical.
@@ -622,7 +622,7 @@ won't be discarded. `src/basics/player_game.cpp:286-314`.
 ### signal_turn
 The turn a CTP/CTD was first stamped. The queue-order tiebreaker throughout —
 plays go in signal order, and only the newest CTD is discardable.
-`card.h:121`; `decide.cpp:900-912`, `:935-959`.
+`card.h:121`; `decide.cpp:904-916`, `:935-959`.
 
 ### special rank
 A rank with variant-specific clue-touch behaviour, combined with `rainbow_s` /
@@ -704,13 +704,24 @@ Suit family matched by White, Gray, Light, Null. No colour clue touches them.
 `src/basics/variant.cpp:151`, `:205`.
 
 ### zcs_turn (zero-clue-stall turn)
-The turn the team ran out of clue tokens. Cards drawn after it are excluded
-from the chop, so a player who drew during the stall isn't expected to discard
-them. `include/hanabi/basics/game.h:292`; set at `decide.cpp:461`, read by
-`Game::chop` at `decide.cpp:904-910`. Under reactor0 (and TIIAH), a hand left
-with no chop at all because of it discards the FIRST card drawn during the stall
-rather than pitching blind — floor rung `12.discard_stall_drawn`, reactor0
-DECISION_MAKING.md (v16.23.0).
+The turn a clue took the team to zero clue tokens, -1 when no marker is live. While
+the marker gates a player, cards he drew after it are excluded from his chop, so a
+player who drew during the stall isn't expected to discard them.
+- **Where.** `include/hanabi/basics/game.h:373`; set at `decide.cpp:477-480`, read
+  by `Game::chop` at `decide.cpp:941-947`.
+- **When it clears (v23.38.0, the user's ruling).** A player who begins his turn with
+  a token clears the marker for every other player, whether or not he acts; his own
+  clears when someone else begins a turn with one.
+  - One bit per player in `zcs_cleared`, set by `Game::zcs_turn_starts`
+    (`decide.cpp:952-964`) and read by `Game::zcs_gates` (`game.h:491-493`).
+  - The marker resets once every player's bit is set.
+  - Replay 2027922 T27, `human_vs_bot_diagnostics/2027922.md`.
+- **No chop at all.** Under reactor0 (and TIIAH), a hand left with no chop at all
+  because of the marker discards the FIRST card drawn during the stall rather than
+  pitching blind: floor rung `12.discard_stall_drawn`, reactor0 DECISION_MAKING.md
+  (v16.23.0).
+- **Snapshots.** `zcs_turn` and `zcs_cleared` are written to every STATE record but
+  never read back; `apply_snapshot` recomputes them from the action history.
 
 ### suit name resolution
 `data/variants.json` names a suit by its DISPLAY name; `data/suits.json` is keyed

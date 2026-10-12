@@ -908,6 +908,7 @@ Game Game::rewind(int turn, const Action& new_action) const {
   ng.queued_cmds.clear();
   ng.waiting.clear();
   ng.next_interp = std::nullopt;
+  ng.reset_zcs();  // recomputed by the replay below
   ng.catchup = true;
   ng.rewind_depth = rewind_depth + 1;
 

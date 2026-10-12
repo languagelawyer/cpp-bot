@@ -473,8 +473,12 @@ void Game::interpret_clue(const Game& prev, const ClueAction& action) {
   if (plays_after.size() < signalled_plays.size()) {
     with_move(ClueInterp::MISTAKE, /*overwrite=*/true);
   }
-  if (prev.state.can_clue()) reset_zcs();
-  if (!state.can_clue()) zcs_turn = state.turn_count;
+  // A clue that spends the last token sets the zero-clue marker afresh.
+  if (!state.can_clue()) {
+    zcs_turn = state.turn_count;
+    zcs_cleared = 0;
+  }
+  zcs_turn_starts(state.next_player_index(action.giver));
   next_interp = std::nullopt;
 }
 
@@ -710,7 +714,7 @@ void Game::interpret_discard(const Game& prev, const DiscardAction& action) {
   if (!hanabi::reactor0::read_positional_double_discard(prev, *this, action)) {
     hanabi::reactor0::read_positional_discard(prev, *this, action);
   }
-  if (prev.state.can_clue()) reset_zcs();
+  zcs_turn_starts(state.next_player_index(action.player_index_v));
 }
 
 void Game::interpret_play(const Game& prev, const PlayAction& action) {
@@ -807,7 +811,7 @@ void Game::interpret_play(const Game& prev, const PlayAction& action) {
   elim();
   resolve_deferred_elims();
   enforce_calls_after_action(*this);
-  if (prev.state.can_clue()) reset_zcs();
+  zcs_turn_starts(state.next_player_index(action.player_index_v));
 }
 
 void Game::update_turn(const TurnAction& action, bool advanced) {
@@ -934,14 +938,29 @@ std::optional<int> Game::chop(int player_index) const {
     }
   }
   if (ctd) return ctd;
-  // Second pass: newest unclued + status NONE, gated on zcs_turn.
+  // Second pass: newest unclued + status NONE, gated on the zero-clue marker.
+  const bool gated = zcs_gates(player_index);
   for (int o : state.hands[player_index]) {
-    bool zcs_ok = zcs_turn == -1 || zcs_turn >= state.deck[o].turn_drawn;
+    bool zcs_ok = !gated || zcs_turn >= state.deck[o].turn_drawn;
     if (zcs_ok && !state.deck[o].clued && meta[o].status == CardStatus::NONE) {
       return o;
     }
   }
   return std::nullopt;
+}
+
+void Game::zcs_turn_starts(int player_index) {
+  // A player who begins his turn with a token clears the zero-clue marker for
+  // every OTHER player, whether or not he acts; his own clears when someone else
+  // begins a turn with one (v23.38.0, the user's ruling;
+  // human_vs_bot_diagnostics/2027922.md T27). Before v23.38.0 it cleared only
+  // after an action taken from a state with a token, so a discard at zero tokens
+  // left it set for a whole turn more: 2027922 T27 locked will-bot67's d4 as his
+  // chop, a card behind the trash r2 he drew during the stall.
+  if (zcs_turn == -1 || !state.can_clue()) return;
+  const unsigned everyone = (1u << state.num_players) - 1;
+  zcs_cleared |= everyone & ~(1u << player_index);
+  if (zcs_cleared == everyone) reset_zcs();
 }
 
 bool Game::has_ptd() const {
@@ -1227,7 +1246,7 @@ PerformAction Game::take_action_ladder() const {
                             !common.obvious_loaded(*this, next_player_index);
     if (urgent_bob_save) {
       Game tmp = *this;
-      tmp.zcs_turn = -1;
+      tmp.reset_zcs();
       auto bob_chop = tmp.chop(next_player_index);
       if (bob_chop) {
         auto bob_chop_id = s.deck[*bob_chop].id();
